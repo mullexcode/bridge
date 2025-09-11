@@ -34,9 +34,9 @@ export default function Select({
     return null
   }, [options, value])
   return (
-    <div className="mb-4">
+    <div className="mb-3 md:mb-[14px]">
       {label && (
-        <div className="mb-[10px] text-[16px] font-medium text-left leading-[21px] text-[#454464]">
+        <div className="mb-[6px] md:mb-[10px] text-[14px] md:text-[16px] font-medium text-left leading-[18px] md:leading-[21px] text-[#454464]">
           {label}
         </div>
       )}
@@ -45,7 +45,7 @@ export default function Select({
       }}>
         <ListboxButton
           className={clsx(
-            "w-full relative h-[56px] cursor-pointer hover:bg-[#F2F3F8] !shadow-none flex items-center justify-between px-[20px] text-[15px] bg-[#F2F3F8] rounded-[12px]",
+            "w-full relative h-[42px] md:h-[48px] cursor-pointer hover:bg-[#F2F3F8] !shadow-none flex items-center justify-between px-[20px] text-[15px] bg-[#F2F3F8] rounded-[12px]",
             "focus:not-data-focus:outline-none data-focus:outline-2 data-focus:-outline-offset-2 data-focus:outline-white/25"
           )}
         >
@@ -54,7 +54,7 @@ export default function Select({
               <img
                 alt=""
                 src={selected.icon}
-                className="w-[34px] h-[34px]"
+                className="w-[28px] h-[28px]"
               ></img>
               <span className="text-[16px] font-semibold text-[#2C2C3F]">
                 {selected.label}
@@ -64,7 +64,7 @@ export default function Select({
             <span className="text-[#A6A8B3]">{placeholder}</span>
           )}
           <ChevronDownIcon
-            className="group pointer-events-none size-4 fill-[#B0B9C1]"
+            className="group pointer-events-none size-4"
             aria-hidden="true"
           />
         </ListboxButton>
@@ -72,7 +72,7 @@ export default function Select({
           anchor="bottom"
           transition
           className={clsx(
-            "rounded-[12px] mt-[16px] w-[510px] bg-[#E7E9F2] outline-none border-none text-[16px] font-semibold",
+            "rounded-[12px] mt-[16px] w-[calc(90vw-32px)] md:w-[510px] bg-[#E7E9F2] outline-none border-none text-[16px] font-semibold",
             "transition duration-100 ease-in data-leave:data-closed:opacity-0"
           )}
         >
@@ -85,7 +85,7 @@ export default function Select({
               <img
                 alt=""
                 src={option.icon}
-                className="w-[34px] h-[34px]"
+                className="w-[28px] h-[28px]"
               ></img>
               <div className="">{option.label}</div>
             </ListboxOption>

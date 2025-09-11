@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import Select from "../components/Select";
 import Input from "../components/Input";
 import ETHIcon from "@/assets/images/ETH.png";
-import MetisIcon from "@/assets/images/metis.png";
 import USDCIcon from "@/assets/images/USDC.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
@@ -19,7 +18,7 @@ import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
 import clsx from "clsx";
 import { toast } from "react-toastify";
-import { Tooltip } from "react-tooltip";
+// import { Tooltip } from "react-tooltip";
 import TooltipIcon from "@/assets/images/tooltip.png";
 
 import "react-tooltip/dist/react-tooltip.css";
@@ -32,12 +31,12 @@ const chains = [
     symbol: "eth",
     id: 11155111,
   },
-  {
-    icon: MetisIcon,
-    label: "Metis",
-    symbol: "metis",
-    id: 59902,
-  },
+  // {
+  //   icon: MetisIcon,
+  //   label: "Metis",
+  //   symbol: "metis",
+  //   id: 59902,
+  // },
 ];
 
 const assets = [
@@ -227,14 +226,15 @@ const Pool: React.FC = () => {
   const liquidity = useMemo(() => {
     return ethers.formatUnits(currentLiquity?.toString() || 0, 6);
   }, [currentLiquity]);
+
   return (
-    <div className="">
+    <div className="max-md:w-[90vw]">
       {/* Main Content */}
       <div className="flex justify-center bg-white rounded-[14px] mb-[20px] items-center py-[12px] gap-[12px] text-[16px] font-medium">
         <div
           onClick={() => setType("Add")}
           className={clsx(
-            "w-[255px] h-[36px] flex items-center justify-center rounded-[10px] cursor-pointer",
+            "w-[45%] md:w-[255px] h-[36px] flex items-center justify-center rounded-[10px] cursor-pointer",
             {
               "bg-gradient-to-br from-[#08C8B5] text-white to-[#9A20DD] bg-[length:100%_100%]":
                 type === "Add",
@@ -246,7 +246,7 @@ const Pool: React.FC = () => {
         <div
           onClick={() => setType("Remove")}
           className={clsx(
-            "w-[255px] h-[36px] flex items-center justify-center rounded-[10px] cursor-pointer",
+            "w-[45%] md:w-[255px] h-[36px] flex items-center justify-center rounded-[10px] cursor-pointer",
             {
               "bg-gradient-to-br from-[#08C8B5] text-white to-[#9A20DD] bg-[length:100%_100%]":
                 type === "Remove",
@@ -257,7 +257,7 @@ const Pool: React.FC = () => {
         </div>
       </div>
       <main className="container rounded-[14px] bg-[#53517C] mx-auto">
-        <div className="w-full rounded-[14px] bg-[#ffffff] px-[20px] py-[24px]">
+        <div className="w-full rounded-[14px] bg-[#ffffff] p-[16px] !pb-[4px]">
           {/* Bridge Card */}
           <div className="overflow-hidden">
             {/* From Chain Selection */}
@@ -280,16 +280,16 @@ const Pool: React.FC = () => {
         </div>
       </main>
       <main className="container !mt-[20px] rounded-[14px] bg-[#53517C] mx-auto">
-        <div className="w-full rounded-[14px] bg-[#ffffff] px-[20px] py-[24px]">
+        <div className="w-full rounded-[14px] bg-[#ffffff] px-[16px] md:px-[20px] py-[16px] md:py-[24px]">
           {/* Bridge Card */}
           {type === "Add" ? (
             <div className="overflow-hidden">
               {/* From Chain Selection */}
               <div className="flex items-center mb-[10px] justify-between">
-                <div className="text-[16px] font-medium text-left leading-[21px] text-[#454464]">
+                <div className="text-[14px] md:text-[16px] font-medium text-left leading-[18px] md:leading-[21px] text-[#454464]">
                   Amount
                 </div>
-                <div className="text-[16px] font-medium text-left leading-[21px] text-[#454464]">
+                <div className="text-[14px] md:text-[16px] font-medium text-left leading-[18px] md:leading-[21px] text-[#454464]">
                   Balance: {formatTokenBalance}
                 </div>
               </div>
@@ -320,10 +320,10 @@ const Pool: React.FC = () => {
             <div className="overflow-hidden">
               {/* From Chain Selection */}
               <div className="flex items-center mb-[10px] justify-between">
-                <div className="text-[16px] font-medium text-left leading-[21px] text-[#454464]">
+                <div className="text-[14px] md:text-[16px]text-[16px] font-medium text-left leading-[18px] md:leading-[21px] text-[#454464]">
                   Remove
                 </div>
-                <div className="text-[16px] font-medium text-left leading-[21px] text-[#454464]">
+                <div className="text-[14px] md:text-[16px]text-[16px] font-medium text-left leading-[18px] md:leading-[21px] text-[#454464]">
                   Your Total Liquidity: {liquidity}{" "}
                   {selectedAsset.toLocaleUpperCase()}
                 </div>
@@ -343,29 +343,31 @@ const Pool: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="p-[20px] text-[14px]font-medium text-[#FFFFFF]">
-          <div className="flex items-center justify-between">
+        <div className="p-[16px] text-[14px]font-medium text-[#FFFFFF]">
+          <div className="flex items-center h-[18px] justify-between">
             <div
               data-tooltip-id="my-tooltip"
               className="flex items-center gap-[8px]"
             >
-              Fees
+              Gas fee
               <img alt="" src={TooltipIcon} className="w-[12px] h-[12px]"></img>
             </div>
-            <Tooltip id="my-tooltip" className="!bg-[#454464] !rounded-[14px]">
-              <div className="bg-[#454464] text-[12px] font-normal text-left rounded-[14px]">
-                <p>he Base Fee: ～{gasFee || "--"} ETH</p>
-                <p className="mb-4">The Protocol Fee: 0 USDC</p>
-                <p className="mb-4">
-                  Gas Fee is used to cover the gas cost for sending your
-                  transfer to the chain.{" "}
-                </p>
-                <p>
-                  Protocol Fee is paid to Mullex to operate liquidity expenses.
-                </p>
-              </div>
-            </Tooltip>
-            <span>{gasFee || "--"}</span>
+            {/* {
+              type !== "Add" && <Tooltip id="my-tooltip" className="!bg-[#454464] !rounded-[14px]">
+                <div className="bg-[#454464] text-[12px] font-normal text-left rounded-[14px]">
+                  <p>he Base Fee: ～{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === 11155111 ? 'ETH' : "METIS") : ""}</p>
+                  <p className="mb-4">The Protocol Fee: 0.0003 USDC</p>
+                  <p className="mb-4">
+                    Gas Fee is used to cover the gas cost for sending your
+                    transfer to the chain.{" "}
+                  </p>
+                  <p>
+                    Protocol Fee is paid to Mullex as economic incentives.
+                  </p>
+                </div>
+              </Tooltip>
+            } */}
+            <span>{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === 11155111 ? 'ETH' : "METIS") : ""}</span>
           </div>
         </div>
       </main>
@@ -380,13 +382,15 @@ const Pool: React.FC = () => {
           }
         }}
         className={clsx(
-          "container !mt-[30px] gap-[8px] opacity-40 h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
+          "container !mt-[20px] gap-[8px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
           {
-            "cursor-not-allowed": submitDisabled || loading,
+            "cursor-not-allowed opacity-40": submitDisabled || loading,
           }
         )}
       >
-        {type} liquidity
+        {
+          (fromChain && (account.chainId !== fromChain)) ? "Wrong Network" : <>{type} liquidity</>
+        }
       </div>
       {loading && <Loading></Loading>}
     </div>

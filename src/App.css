@@ -50,6 +50,16 @@
   .container {
     width: 100%;
     max-width: 100%;
-    padding: 0 24px;
+  }
+}
+.Toastify__toast {
+  align-items: flex-start !important;
+  margin-top: 42px !important;
+  width: 380px !important;
+}
+
+@media (max-width: 768px) {
+  .Toastify__toast {
+    width: 90vw !important;
   }
 }

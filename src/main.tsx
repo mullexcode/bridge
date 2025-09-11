@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import { mainnet, metis, metisSepolia, sepolia } from 'wagmi/chains';
 import { ToastContainer } from "react-toastify";
-import { injected } from 'wagmi/connectors';
 import './index.css';
 import App from './App.tsx';
 import "react-toastify/dist/ReactToastify.css";
@@ -17,7 +16,6 @@ const queryClient = new QueryClient();
 // 配置Wagmi v2
 export const config = createConfig({
   chains: [mainnet, sepolia, metisSepolia, metis],
-  connectors: [injected()],
   transports: {
     [mainnet.id]: http(),
     [sepolia.id]: http(),
@@ -26,11 +24,13 @@ export const config = createConfig({
   },
 });
 
+
 const WagmiConfig = getDefaultConfig({
   appName: "cece",
   projectId: "52a9534713853d81195801410732ba51",
   chains: [mainnet, sepolia, metisSepolia, metis],
 });
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <WagmiProvider config={WagmiConfig}>
