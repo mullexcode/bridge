@@ -20,7 +20,7 @@ export const config = createConfig({
     [mainnet.id]: http(),
     [sepolia.id]: http(),
     [metisSepolia.id]: http(),
-    [metis.id]: http(),
+    [metis.id]: http("https://metis.drpc.org"),
   },
 });
 
@@ -29,6 +29,12 @@ const WagmiConfig = getDefaultConfig({
   appName: "cece",
   projectId: "52a9534713853d81195801410732ba51",
   chains: [mainnet, sepolia, metisSepolia, metis],
+  transports: {
+    [mainnet.id]: http("https://lb.drpc.org/ethereum/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
+    [sepolia.id]: http(),
+    [metisSepolia.id]: http(),
+    [metis.id]: http("https://lb.drpc.org/metis/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
+  },
 });
 
 createRoot(document.getElementById('root')!).render(
