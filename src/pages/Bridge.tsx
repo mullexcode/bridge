@@ -41,8 +41,8 @@ const assets = [
   {
     icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
     label: "muUSD",
-    symbol: "musd",
-    id: "musd",
+    symbol: "muUSD",
+    id: "muUSD",
   },
   // {
   //   icon: USDCIcon,
