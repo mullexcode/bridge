@@ -54,11 +54,11 @@ const assets = [
 
 const tokens = {
   [import.meta.env.VITE_APP_ETH_CHAINID]: {
-    musd: import.meta.env.VITE_APP_ETH_MUSD,
+    muUSD: import.meta.env.VITE_APP_ETH_MUSD,
     usdc: import.meta.env.VITE_APP_ETH_USDC,
   },
   [import.meta.env.VITE_APP_METIS_CHAINID]: {
-    musd: import.meta.env.VITE_APP_METIS_MUSD,
+    muUSD: import.meta.env.VITE_APP_METIS_MUSD,
     usdc: import.meta.env.VITE_APP_METIS_USDC,
   } as const,
 };
@@ -197,7 +197,7 @@ const Bridge: React.FC = () => {
     const _poolSize = ethers.formatUnits((poolSize?.toString() || 0), 6)
     return {
       overBalance: new BigNumber(amount).lte(_tokenBalance),
-      overPoolSize: new BigNumber(amount).lte(_poolSize) || selectedAsset.toLocaleLowerCase() === "musd"
+      overPoolSize: new BigNumber(amount).lte(_poolSize) || selectedAsset.toLocaleLowerCase() === "muUSD"
     }
   }, [tokenBalance, poolSize, amount])
 

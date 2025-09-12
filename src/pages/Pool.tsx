@@ -42,9 +42,9 @@ const chains = [
 const assets = [
   // {
   //   icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
-  //   label: "MUSD",
-  //   symbol: "musd",
-  //   id: "musd",
+  //   label: "muUSD",
+  //   symbol: "muUSD",
+  //   id: "muUSD",
   // },
   {
     icon: USDCIcon,
@@ -56,11 +56,11 @@ const assets = [
 
 const tokens = {
   [import.meta.env.VITE_APP_ETH_CHAINID]: {
-    musd: import.meta.env.VITE_APP_ETH_MUSD,
+    muUSD: import.meta.env.VITE_APP_ETH_MUSD,
     usdc: import.meta.env.VITE_APP_ETH_USDC,
   },
   [import.meta.env.VITE_APP_METIS_CHAINID]: {
-    musd: import.meta.env.VITE_APP_METIS_MUSD,
+    muUSD: import.meta.env.VITE_APP_METIS_MUSD,
     usdc: import.meta.env.VITE_APP_METIS_USDC,
   } as const,
 };
