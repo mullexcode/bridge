@@ -247,7 +247,7 @@ const Bridge: React.FC = () => {
   const buttonText = useMemo(() => {
     if (!account.address) {
       return "Transfer"
-    } else if (fromChain && (account.chainId! == fromChain)) {
+    } else if (fromChain && (account.chainId !== fromChain)) {
       return "Wrong Network"
     } else if (amountError || !amount) {
       return "Enter amount"
