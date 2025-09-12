@@ -27,13 +27,13 @@ const chains = [
     icon: ETHIcon,
     label: "Ethereum",
     symbol: "eth",
-    id: 11155111,
+    id: Number(import.meta.env.VITE_APP_ETH_CHAINID) || 1,
   },
   {
     icon: MetisIcon,
     label: "Metis",
     symbol: "metis",
-    id: 59902,
+    id: Number(import.meta.env.VITE_APP_METIS_CHAINID) || 1088,
   },
 ];
 
@@ -53,19 +53,19 @@ const assets = [
 ];
 
 const tokens = {
-  11155111: {
-    musd: "0x68F2Aee1054D468e299F9bf6c68a9369f7BB079b",
-    usdc: "0xE1262c4856656d67c9c9cf0c6Acf12df5EfAB4AA",
+  [import.meta.env.VITE_APP_ETH_CHAINID]: {
+    musd: import.meta.env.VITE_APP_ETH_MUSD,
+    usdc: import.meta.env.VITE_APP_ETH_USDC,
   },
-  59902: {
-    musd: "0xeE36126C3d4cB96133aab87Ae4526e38F415e75b",
-    usdc: "0xfB0Ba1EB50831297DB0c49E4FCc743830546467D",
+  [import.meta.env.VITE_APP_METIS_CHAINID]: {
+    musd: import.meta.env.VITE_APP_METIS_MUSD,
+    usdc: import.meta.env.VITE_APP_METIS_USDC,
   } as const,
 };
 
 const contactAddress = {
-  11155111: "0x9596051b9082ece3cc9a699077b99a3df5eaab54",
-  59902: "0x377598BB2347BC6723f894D6551b0E36B4812BD6",
+  [import.meta.env.VITE_APP_ETH_CHAINID]: import.meta.env.VITE_APP_ETH_CONTACT,
+  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env.VITE_APP_METIS_CONTACT,
 } as const;
 
 type ChainId = keyof typeof tokens;
@@ -84,11 +84,10 @@ const Bridge: React.FC = () => {
   const { sendTransactionAsync } = useSendTransaction();
   // const { data: feeData } = useFeeData();
   const currentContact = useMemo(() => {
-    return fromChain === 59902
-      ? contactAddress[59902]
-      : contactAddress[11155111];
+    return fromChain ===  Number(import.meta.env.VITE_APP_METIS_CHAINID)
+      ? contactAddress[ Number(import.meta.env.VITE_APP_METIS_CHAINID)]
+      : contactAddress[Number(import.meta.env.VITE_APP_ETH_CHAINID)];
   }, [fromChain]);
-
   useEffect(() => {
     if (account.address && !localStorage.getItem("showRisk")) {
       setToAddress(account.address)
@@ -104,7 +103,7 @@ const Bridge: React.FC = () => {
   }, [account.address])
 
   const assetAddress = useMemo(() => {
-    const targetChainId: ChainId = fromChain === 59902 ? 59902 : 11155111;
+    const targetChainId: ChainId = fromChain ===  Number(import.meta.env.VITE_APP_METIS_CHAINID) ?  Number(import.meta.env.VITE_APP_METIS_CHAINID) : Number(import.meta.env.VITE_APP_ETH_CHAINID);
     const assetKey = selectedAsset.toLocaleLowerCase() as AssetType;
     return tokens[targetChainId]?.[assetKey] as `0x${string}` | undefined;
   }, [fromChain, selectedAsset]);
@@ -155,7 +154,7 @@ const Bridge: React.FC = () => {
           };
           const txHash = await sendTransactionAsync(tx);
           await waitForTransactionReceipt(config, {
-            chainId: fromChain as 1 | 11155111 | 59902 | 1088,
+            chainId: fromChain as any,
             hash: txHash,
           });
           submitFinal();
@@ -183,7 +182,7 @@ const Bridge: React.FC = () => {
     };
     const txHash = await sendTransactionAsync(tx);
     await waitForTransactionReceipt(config, {
-      chainId: fromChain as 1 | 11155111 | 59902 | 1088,
+      chainId: fromChain as any,
       hash: txHash,
     });
     setAmount("");
@@ -232,7 +231,7 @@ const Bridge: React.FC = () => {
   //         account: account.address,
   //         to: currentContact as `0x${string}`,
   //         data: depositData as `0x${string}`,
-  //         chainId: fromChain as 1 | 11155111 | 59902 | 1088,
+  //         chainId: fromChain as 1 | Number(import.meta.env.VITE_APP_ETH_CHAINID) |  Number(import.meta.env.VITE_APP_METIS_CHAINID) | 1088,
   //       }).then(gasEstimateRes => {
   //         setGasFee(ethers.formatEther(new BigNumber(gasEstimateRes).times(feeData?.maxFeePerGas || 0).toString()).toString());
 
@@ -414,7 +413,7 @@ const Bridge: React.FC = () => {
           // const iface = new Interface(bridgeAbi);
           // const depositData = iface.encodeFunctionData("mappingMUSD", [
           //   "usdc",
-          //   11155111,
+          //   Number(import.meta.env.VITE_APP_ETH_CHAINID),
           //   "0x3edbe49932b45b28a1887558ada7c80c7a2624b6",
           //   ethers.parseUnits("100", 6),
           // ]);
@@ -425,7 +424,7 @@ const Bridge: React.FC = () => {
           // };
           // const txHash = await sendTransactionAsync(tx);
           // await waitForTransactionReceipt(config, {
-          //   chainId: 11155111,
+          //   chainId: Number(import.meta.env.VITE_APP_ETH_CHAINID),
           //   hash: txHash,
           // });
           if (!submitDisabled) {

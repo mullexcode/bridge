@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --port 5174",
     "build": "tsc -b && vite build",
+    "build:testnet": "tsc -b && vite build --mode testnet",
+    "build:prod": "tsc -b && vite build --mode prod",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -29,13 +29,13 @@ const chains = [
     icon: ETHIcon,
     label: "Ethereum",
     symbol: "eth",
-    id: 11155111,
+    id: Number(import.meta.env.VITE_APP_ETH_CHAINID) || 1,
   },
   // {
   //   icon: MetisIcon,
   //   label: "Metis",
   //   symbol: "metis",
-  //   id: 59902,
+  //   id: Number(import.meta.env.VITE_APP_METIS_CHAINID),
   // },
 ];
 
@@ -55,19 +55,19 @@ const assets = [
 ];
 
 const tokens = {
-  11155111: {
-    musd: "0x68F2Aee1054D468e299F9bf6c68a9369f7BB079b",
-    usdc: "0xE1262c4856656d67c9c9cf0c6Acf12df5EfAB4AA",
+  [import.meta.env.VITE_APP_ETH_CHAINID]: {
+    musd: import.meta.env.VITE_APP_ETH_MUSD,
+    usdc: import.meta.env.VITE_APP_ETH_USDC,
   },
-  59902: {
-    musd: "0xeE36126C3d4cB96133aab87Ae4526e38F415e75b",
-    usdc: "0xfB0Ba1EB50831297DB0c49E4FCc743830546467D",
+  [import.meta.env.VITE_APP_METIS_CHAINID]: {
+    musd: import.meta.env.VITE_APP_METIS_MUSD,
+    usdc: import.meta.env.VITE_APP_METIS_USDC,
   } as const,
 };
 
 const contactAddress = {
-  11155111: "0x9596051b9082ece3cc9a699077b99a3df5eaab54",
-  59902: "0x377598BB2347BC6723f894D6551b0E36B4812BD6",
+  [import.meta.env.VITE_APP_ETH_CHAINID]: import.meta.env.VITE_APP_ETH_CONTACT,
+  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env.VITE_APP_METIS_CONTACT,
 } as const;
 
 type ChainId = keyof typeof tokens;
@@ -83,13 +83,13 @@ const Pool: React.FC = () => {
   const { sendTransactionAsync } = useSendTransaction();
   const { data: feeData } = useFeeData();
   const currentContact = useMemo(() => {
-    return fromChain === 59902
-      ? contactAddress[59902]
-      : contactAddress[11155111];
+    return fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
+      ? contactAddress[Number(import.meta.env.VITE_APP_METIS_CHAINID)]
+      : contactAddress[Number(import.meta.env.VITE_APP_ETH_CHAINID)];
   }, [fromChain]);
 
   const assetAddress = useMemo(() => {
-    const targetChainId: ChainId = fromChain === 59902 ? 59902 : 11155111;
+    const targetChainId: ChainId = fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID) ? Number(import.meta.env.VITE_APP_METIS_CHAINID) : Number(import.meta.env.VITE_APP_ETH_CHAINID);
     const assetKey = selectedAsset.toLocaleLowerCase() as AssetType;
     return tokens[targetChainId]?.[assetKey] as `0x${string}` | undefined;
   }, [fromChain, selectedAsset]);
@@ -149,7 +149,7 @@ const Pool: React.FC = () => {
           };
           const txHash = await sendTransactionAsync(tx);
           await waitForTransactionReceipt(config, {
-            chainId: fromChain as 1 | 11155111 | 59902 | 1088,
+            chainId: fromChain as any,
             hash: txHash,
           });
           submitFinal();
@@ -174,7 +174,7 @@ const Pool: React.FC = () => {
     };
     const txHash = await sendTransactionAsync(tx);
     await waitForTransactionReceipt(config, {
-      chainId: fromChain as 1 | 11155111 | 59902 | 1088,
+      chainId: fromChain as any,
       hash: txHash,
     });
     setLoading(false);
@@ -199,7 +199,7 @@ const Pool: React.FC = () => {
           account: account.address,
           to: currentContact as `0x${string}`,
           data: depositData as `0x${string}`,
-          chainId: fromChain as 1 | 11155111 | 59902 | 1088,
+          chainId: fromChain as any,
         }).then((gasEstimateRes) => {
           setGasFee(
             ethers
@@ -355,7 +355,7 @@ const Pool: React.FC = () => {
             {/* {
               type !== "Add" && <Tooltip id="my-tooltip" className="!bg-[#454464] !rounded-[14px]">
                 <div className="bg-[#454464] text-[12px] font-normal text-left rounded-[14px]">
-                  <p>he Base Fee: ～{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === 11155111 ? 'ETH' : "METIS") : ""}</p>
+                  <p>he Base Fee: ～{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === Number(import.meta.env.VITE_APP_ETH_CHAINID) ? 'ETH' : "METIS") : ""}</p>
                   <p className="mb-4">The Protocol Fee: 0.0003 USDC</p>
                   <p className="mb-4">
                     Gas Fee is used to cover the gas cost for sending your
@@ -367,7 +367,7 @@ const Pool: React.FC = () => {
                 </div>
               </Tooltip>
             } */}
-            <span>{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === 11155111 ? 'ETH' : "METIS") : ""}</span>
+            <span>{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === Number(import.meta.env.VITE_APP_ETH_CHAINID) ? 'ETH' : "METIS") : ""}</span>
           </div>
         </div>
       </main>
