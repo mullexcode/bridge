@@ -6,11 +6,7 @@ import MetisIcon from "@/assets/images/metis.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, isAddress, MaxUint256 } from "ethers";
-import {
-  useAccount,
-  useReadContract,
-  useSendTransaction,
-} from "wagmi";
+import { useAccount, useReadContract, useSendTransaction } from "wagmi";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
@@ -65,13 +61,14 @@ const tokens = {
 
 const contactAddress = {
   [import.meta.env.VITE_APP_ETH_CHAINID]: import.meta.env.VITE_APP_ETH_CONTACT,
-  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env.VITE_APP_METIS_CONTACT,
+  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env
+    .VITE_APP_METIS_CONTACT,
 } as const;
 
 type ChainId = keyof typeof tokens;
 type AssetType = keyof (typeof tokens)[ChainId];
 const Bridge: React.FC = () => {
-  const [fromChain, setFromChain] = useState(1);
+  const [fromChain, setFromChain] = useState(0);
   const account = useAccount();
   const [loading, setLoading] = useState(false);
   const [amountError, setAmountError] = useState("");
@@ -79,31 +76,49 @@ const Bridge: React.FC = () => {
   // const [gasFee, setGasFee] = useState("--")
   const [toChain, setToChain] = useState(0);
   const [selectedAsset, setSelectedAsset] = useState<string>("");
-  const [toAddress, setToAddress] = useState<string>(account.address?.toString() || "");
+  const [toAddress, setToAddress] = useState<string>(
+    account.address?.toString() || ""
+  );
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
   // const { data: feeData } = useFeeData();
+
   const currentContact = useMemo(() => {
-    return fromChain ===  Number(import.meta.env.VITE_APP_METIS_CHAINID)
-      ? contactAddress[ Number(import.meta.env.VITE_APP_METIS_CHAINID)]
+    return fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
+      ? contactAddress[Number(import.meta.env.VITE_APP_METIS_CHAINID)]
       : contactAddress[Number(import.meta.env.VITE_APP_ETH_CHAINID)];
   }, [fromChain]);
   useEffect(() => {
-    if (account.address && !localStorage.getItem("showRisk")) {
-      setToAddress(account.address)
-      localStorage.setItem("showRisk", "1")
-      toast.error(<div className="text-left">
-        <div className="text-[16px] font-semibold text-[#EC4A2F]">Risk Disclosure</div>
-        <div className="text-[13px] leading-[20px] text-[#2C2C3F] mt-1">This product is in the Alpha stage. Please do not transfer or deposit more than you can afford to lose. During the Alpha phase, cross-chain transactions are limited to a single transfer of 1000 USD worth of token.</div>
-      </div>, {
-        autoClose: false,
-        closeOnClick: true,
-      })
+    if (account.address) {
+      setToAddress(account.address.toString());
     }
-  }, [account.address])
+    if (account.address && !localStorage.getItem("showRisk")) {
+      localStorage.setItem("showRisk", "1");
+      toast.error(
+        <div className="text-left">
+          <div className="text-[16px] font-semibold text-[#EC4A2F]">
+            Risk Disclosure
+          </div>
+          <div className="text-[13px] leading-[20px] text-[#2C2C3F] mt-1">
+            This product is in the Alpha stage. Please do not transfer or
+            deposit more than you can afford to lose. During the Alpha phase,
+            cross-chain transactions are limited to a single transfer of 1000
+            USD worth of token.
+          </div>
+        </div>,
+        {
+          autoClose: false,
+          closeOnClick: true,
+        }
+      );
+    }
+  }, [account.address]);
 
   const assetAddress = useMemo(() => {
-    const targetChainId: ChainId = fromChain ===  Number(import.meta.env.VITE_APP_METIS_CHAINID) ?  Number(import.meta.env.VITE_APP_METIS_CHAINID) : Number(import.meta.env.VITE_APP_ETH_CHAINID);
+    const targetChainId: ChainId =
+      fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
+        ? Number(import.meta.env.VITE_APP_METIS_CHAINID)
+        : Number(import.meta.env.VITE_APP_ETH_CHAINID);
     const assetKey = selectedAsset as AssetType;
     return tokens[targetChainId]?.[assetKey] as `0x${string}` | undefined;
   }, [fromChain, selectedAsset]);
@@ -136,7 +151,7 @@ const Bridge: React.FC = () => {
     chainId: fromChain,
   });
   const submit = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       if (allowance && new BigNumber(allowance.toString()).gt(amount)) {
         submitFinal();
@@ -161,48 +176,51 @@ const Bridge: React.FC = () => {
         }
       }
     } catch {
-      setLoading(false)
+      setLoading(false);
     }
-
   };
 
   const submitFinal = async () => {
-    const iface = new Interface(bridgeAbi);
+    try {
+      const iface = new Interface(bridgeAbi);
 
-    const depositData = iface.encodeFunctionData("depositToken", [
-      selectedAsset,
-      ethers.parseUnits(amount, 6),
-      toChain,
-      toAddress,
-    ]);
-    const tx = {
-      to: currentContact as `0x${string}`,
-      data: depositData as `0x${string}`,
-      value: BigInt(0),
-    };
-    const txHash = await sendTransactionAsync(tx);
-    await waitForTransactionReceipt(config, {
-      chainId: fromChain as any,
-      hash: txHash,
-    });
-    setAmount("");
-    setSelectedAsset("")
-    setToChain(0)
-    setLoading(false)
-    toast.success("Transaction Successful");
+      const depositData = iface.encodeFunctionData("depositToken", [
+        selectedAsset,
+        ethers.parseUnits(amount, 6),
+        toChain,
+        toAddress,
+      ]);
+      const tx = {
+        to: currentContact as `0x${string}`,
+        data: depositData as `0x${string}`,
+        value: BigInt(0),
+      };
+      const txHash = await sendTransactionAsync(tx);
+      await waitForTransactionReceipt(config, {
+        chainId: fromChain as any,
+        hash: txHash,
+      });
+      setAmount("");
+      setSelectedAsset("");
+      setToChain(0);
+      setLoading(false);
+      toast.success("Transaction Successful");
+    } catch {
+      setLoading(false);
+    }
   };
 
   const { overBalance, overPoolSize } = useMemo(() => {
-    const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
-    const _poolSize = ethers.formatUnits((poolSize?.toString() || 0), 6)
+    const _tokenBalance = ethers.formatUnits(tokenBalance?.toString() || 0, 6);
+    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
     return {
       overBalance: new BigNumber(amount).lte(_tokenBalance),
-      overPoolSize: new BigNumber(amount).lte(_poolSize) || selectedAsset === "muUSD"
-    }
-  }, [tokenBalance, poolSize, amount])
+      overPoolSize:
+        new BigNumber(amount).lte(_poolSize) || selectedAsset === "muUSD",
+    };
+  }, [tokenBalance, poolSize, amount]);
 
   const submitDisabled = useMemo(() => {
-
     return !(
       fromChain &&
       toChain &&
@@ -215,7 +233,17 @@ const Bridge: React.FC = () => {
       overPoolSize &&
       selectedAsset
     );
-  }, [amount, fromChain, selectedAsset, account.address, amountError, tokenBalance, poolSize, toAddress, toChain]);
+  }, [
+    amount,
+    fromChain,
+    selectedAsset,
+    account.address,
+    amountError,
+    tokenBalance,
+    poolSize,
+    toAddress,
+    toChain,
+  ]);
 
   // useEffect(() => {
   //   if (!submitDisabled && isAddress(toAddress)) {
@@ -243,23 +271,31 @@ const Bridge: React.FC = () => {
   //     setGasFee("--")
   //   }
   // }, [selectedAsset, submitDisabled, amount, toChain, toAddress])
-
   const buttonText = useMemo(() => {
     if (!account.address) {
-      return "Transfer"
-    } else if (fromChain && (account.chainId !== fromChain)) {
-      return "Wrong Network"
+      return "Transfer";
+    } else if (fromChain && account.chainId !== fromChain) {
+      return "Wrong Network";
     } else if (amountError || !amount) {
-      return "Enter amount"
+      return "Enter amount";
     } else if (!overBalance) {
-      return "Insufficient balance"
+      return "Insufficient balance";
     } else if (!overPoolSize) {
-      return "Insufficient pool size"
+      return "Insufficient pool size";
     } else if (addressError) {
-      return "Invalid address"
+      return "Invalid address";
     }
-    return "Transfer"
-  }, [amountError, amount, account.address, account.chainId, fromChain, overBalance, overPoolSize, addressError])
+    return "Transfer";
+  }, [
+    amountError,
+    amount,
+    account.address,
+    account.chainId,
+    fromChain,
+    overBalance,
+    overPoolSize,
+    addressError,
+  ]);
   return (
     <div className="max-md:w-[90vw]">
       {/* Main Content */}
@@ -270,9 +306,9 @@ const Bridge: React.FC = () => {
             {/* From Chain Selection */}
             <Select
               onChange={(value) => {
-                setFromChain(Number(value))
+                setFromChain(Number(value));
                 if (value.toString() === toChain.toString()) {
-                  setToChain(0)
+                  setToChain(0);
                 }
               }}
               value={fromChain}
@@ -299,7 +335,12 @@ const Bridge: React.FC = () => {
                 Amount
               </div>
               <div className="text-[14px] md:text-[16px] font-medium text-left leading-[18px] md:leading-[21px] text-[#454464]">
-                Balance: {tokenBalance ? new BigNumber(ethers.formatUnits((tokenBalance.toString() || 0), 6) || 0).toString() : '--'}
+                Balance:{" "}
+                {tokenBalance
+                  ? new BigNumber(
+                      ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
+                    ).toString()
+                  : "--"}
               </div>
             </div>
             <Input
@@ -308,23 +349,27 @@ const Bridge: React.FC = () => {
               value={amount}
               onBlur={(e) => {
                 if (new BigNumber(e).lt(" 0.000001")) {
-                  setAmountError("Minimum amount is 0.000001")
-                  return
+                  setAmountError("Minimum amount is 0.000001");
+                  return;
                 }
                 if (new BigNumber(e).gt("1000")) {
-                  setAmountError("Cross-chain amount exceeds the limit (max value 1000u)")
-                  return
+                  setAmountError(
+                    "Cross-chain amount exceeds the limit (max value 1000u)"
+                  );
+                  return;
                 }
-                setAmountError("")
+                setAmountError("");
               }}
               onChange={(e) => {
-                setAmount(e)
+                setAmount(e);
                 if (new BigNumber(e).lt(" 0.000001")) {
-                  setAmountError("Minimum amount is 0.000001")
+                  setAmountError("Minimum amount is 0.000001");
                 } else if (new BigNumber(e).gt("1000")) {
-                  setAmountError("Cross-chain amount exceeds the limit (max value 1000u)")
+                  setAmountError(
+                    "Cross-chain amount exceeds the limit (max value 1000u)"
+                  );
                 } else {
-                  setAmountError("")
+                  setAmountError("");
                 }
                 // const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
                 // const _poolSize = ethers.formatUnits((poolSize?.toString() || 0), 6)
@@ -335,32 +380,36 @@ const Bridge: React.FC = () => {
                 // }
               }}
             ></Input>
-            {
-              amountError && <div className="text-red-500 text-left text-base mt-2">{amountError}</div>
-            }
+            {amountError && (
+              <div className="text-red-500 text-left text-base mt-2">
+                {amountError}
+              </div>
+            )}
             <Input
               label={"To Address"}
               placeholder={"Target chain address"}
               value={toAddress}
               onBlur={(e) => {
                 if (!isAddress(e)) {
-                  setAddressError("Invalid address")
+                  setAddressError("Invalid address");
                 } else {
-                  setAddressError("")
+                  setAddressError("");
                 }
               }}
               onChange={(e) => {
-                setToAddress(e)
+                setToAddress(e);
                 if (!isAddress(e)) {
-                  setAddressError("Invalid address")
+                  setAddressError("Invalid address");
                 } else {
-                  setAddressError("")
+                  setAddressError("");
                 }
               }}
             ></Input>
-            {
-              addressError && <div className="text-red-500 text-left text-base mt-2">{addressError}</div>
-            }
+            {addressError && (
+              <div className="text-red-500 text-left text-base mt-2">
+                {addressError}
+              </div>
+            )}
           </div>
         </div>
         <div className="p-[16px] text-[14px] font-medium text-[#FFFFFF]">
@@ -375,13 +424,15 @@ const Bridge: React.FC = () => {
             <Tooltip id="my-tooltip" className="!bg-[#454464] !rounded-[14px]">
               <div className="bg-[#454464] text-[12px] font-normal text-left w-[285px] rounded-[14px]">
                 <p>The Base Fee: {selectedAsset ? "～0.5 muUSD" : "--"}</p>
-                <p className="mb-4">The Protocol Fee: <span className="text-green-400">For Free!</span></p>
                 <p className="mb-4">
-                  Base Fee is used to cover the gas cost for sending your transfer to the chain.{" "}
+                  The Protocol Fee:{" "}
+                  <span className="text-green-400">For Free!</span>
                 </p>
-                <p>
-                  Protocol Fee is paid to Mullex as economic incentives.
+                <p className="mb-4">
+                  Base Fee is used to cover the gas cost for sending your
+                  transfer to the chain.{" "}
                 </p>
+                <p>Protocol Fee is paid to Mullex as economic incentives.</p>
               </div>
             </Tooltip>
             <span>{selectedAsset ? "～0.5 muUSD" : "--"}</span>
@@ -396,7 +447,15 @@ const Bridge: React.FC = () => {
           </div> */}
           <div className="flex items-center mb-3 h-[18px] justify-between">
             <span>Remaining approved amount</span>
-            <span>{allowance ? (new BigNumber(ethers.formatUnits(allowance?.toString() || 0, 6)).gt(10000000000) ? 'MAX' : ethers.formatEther(allowance?.toString() || 0)) : '--'}</span>
+            <span>
+              {allowance
+                ? new BigNumber(
+                    ethers.formatUnits(allowance?.toString() || 0, 6)
+                  ).gt(10000000000)
+                  ? "MAX"
+                  : ethers.formatEther(allowance?.toString() || 0)
+                : "--"}
+            </span>
           </div>
           <div className="flex items-center h-[18px] justify-between">
             <span>Estimated time of arrival</span>
@@ -438,7 +497,7 @@ const Bridge: React.FC = () => {
           }
         )}
       >
-        {loading ? 'Pending...' : buttonText}
+        {loading ? "Pending..." : buttonText}
       </div>
       {loading && <Loading></Loading>}
     </div>

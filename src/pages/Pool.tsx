@@ -67,14 +67,15 @@ const tokens = {
 
 const contactAddress = {
   [import.meta.env.VITE_APP_ETH_CHAINID]: import.meta.env.VITE_APP_ETH_CONTACT,
-  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env.VITE_APP_METIS_CONTACT,
+  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env
+    .VITE_APP_METIS_CONTACT,
 } as const;
 
 type ChainId = keyof typeof tokens;
 type AssetType = keyof (typeof tokens)[ChainId];
 const Pool: React.FC = () => {
   const [type, setType] = useState<"Add" | "Remove">("Add");
-  const [fromChain, setFromChain] = useState(1);
+  const [fromChain, setFromChain] = useState(0);
   const account = useAccount();
   const [gasFee, setGasFee] = useState("--");
   const [selectedAsset, setSelectedAsset] = useState<string>("");
@@ -89,7 +90,10 @@ const Pool: React.FC = () => {
   }, [fromChain]);
 
   const assetAddress = useMemo(() => {
-    const targetChainId: ChainId = fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID) ? Number(import.meta.env.VITE_APP_METIS_CHAINID) : Number(import.meta.env.VITE_APP_ETH_CHAINID);
+    const targetChainId: ChainId =
+      fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
+        ? Number(import.meta.env.VITE_APP_METIS_CHAINID)
+        : Number(import.meta.env.VITE_APP_ETH_CHAINID);
     const assetKey = selectedAsset as AssetType;
     return tokens[targetChainId]?.[assetKey] as `0x${string}` | undefined;
   }, [fromChain, selectedAsset]);
@@ -160,26 +164,30 @@ const Pool: React.FC = () => {
   };
 
   const submitFinal = async () => {
-    const iface = new Interface(bridgeAbi);
+    try {
+      const iface = new Interface(bridgeAbi);
 
-    const depositData = iface.encodeFunctionData(
-      type === "Add" ? "addLiquity" : "delLiquity",
-      [selectedAsset, ethers.parseUnits(amount, 6)]
-    );
-    const tx = {
-      to: currentContact as `0x${string}`,
-      data: depositData as `0x${string}`,
-      value: BigInt(0),
-    };
-    const txHash = await sendTransactionAsync(tx);
-    await waitForTransactionReceipt(config, {
-      chainId: fromChain as any,
-      hash: txHash,
-    });
-    setLoading(false);
-    setAmount("");
-    setSelectedAsset("");
-    toast.success("Transaction Successful");
+      const depositData = iface.encodeFunctionData(
+        type === "Add" ? "addLiquity" : "delLiquity",
+        [selectedAsset, ethers.parseUnits(amount, 6)]
+      );
+      const tx = {
+        to: currentContact as `0x${string}`,
+        data: depositData as `0x${string}`,
+        value: BigInt(0),
+      };
+      const txHash = await sendTransactionAsync(tx);
+      await waitForTransactionReceipt(config, {
+        chainId: fromChain as any,
+        hash: txHash,
+      });
+      setLoading(false);
+      setAmount("");
+      setSelectedAsset("");
+      toast.success("Transaction Successful");
+    } catch {
+      setLoading(false);
+    }
   };
 
   const submitDisabled = useMemo(() => {
@@ -366,7 +374,14 @@ const Pool: React.FC = () => {
                 </div>
               </Tooltip>
             } */}
-            <span>{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === Number(import.meta.env.VITE_APP_ETH_CHAINID) ? 'ETH' : "METIS") : ""}</span>
+            <span>
+              {gasFee || "--"}{" "}
+              {gasFee && gasFee !== "--"
+                ? fromChain === Number(import.meta.env.VITE_APP_ETH_CHAINID)
+                  ? "ETH"
+                  : "METIS"
+                : ""}
+            </span>
           </div>
         </div>
       </main>
@@ -387,9 +402,11 @@ const Pool: React.FC = () => {
           }
         )}
       >
-        {
-          (fromChain && (account.chainId !== fromChain)) ? "Wrong Network" : <>{type} liquidity</>
-        }
+        {fromChain && account.chainId !== fromChain ? (
+          "Wrong Network"
+        ) : (
+          <>{type} liquidity</>
+        )}
       </div>
       {loading && <Loading></Loading>}
     </div>
