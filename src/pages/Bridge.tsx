@@ -104,7 +104,7 @@ const Bridge: React.FC = () => {
 
   const assetAddress = useMemo(() => {
     const targetChainId: ChainId = fromChain ===  Number(import.meta.env.VITE_APP_METIS_CHAINID) ?  Number(import.meta.env.VITE_APP_METIS_CHAINID) : Number(import.meta.env.VITE_APP_ETH_CHAINID);
-    const assetKey = selectedAsset.toLocaleLowerCase() as AssetType;
+    const assetKey = selectedAsset as AssetType;
     return tokens[targetChainId]?.[assetKey] as `0x${string}` | undefined;
   }, [fromChain, selectedAsset]);
 
