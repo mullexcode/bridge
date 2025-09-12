@@ -197,7 +197,7 @@ const Bridge: React.FC = () => {
     const _poolSize = ethers.formatUnits((poolSize?.toString() || 0), 6)
     return {
       overBalance: new BigNumber(amount).lte(_tokenBalance),
-      overPoolSize: new BigNumber(amount).lte(_poolSize) || selectedAsset.toLocaleLowerCase() === "muUSD"
+      overPoolSize: new BigNumber(amount).lte(_poolSize) || selectedAsset === "muUSD"
     }
   }, [tokenBalance, poolSize, amount])
 
