@@ -89,7 +89,7 @@ export default function Header() {
                                             "inline-flex bg-transparent cursor-pointer border-none gap-[2px] outline-none items-center text-[14px] md:text-[18px] focus:not-data-focus:outline-none data-focus:outline data-focus:outline-white",
                                             {
                                                 "text-[#5F4BD9] font-semibold":
-                                                    location.pathname === "/bridge" || location.pathname === "/",
+                                                    location.pathname === "/bridge" || location.pathname === "/muUSD" || location.pathname === "/",
                                             }
                                         )}
                                     >
@@ -115,17 +115,10 @@ export default function Header() {
                                             </div>
                                         </MenuItem>
                                         <MenuItem>
-                                            <div className="bg-[#F2F3F8] text-[#A6A8B3] relative rounded-[8px] w-[150px] mb-[10px] h-[36px] flex items-center pl-[10px]">
-                                                Deposit
-                                                <div
-                                                    style={{
-                                                        background:
-                                                            "linear-gradient(135deg, #EDE9FE 0%, #F3E8FF 100%)",
-                                                    }}
-                                                    className="text-[8px] text-[#5F4BD9] absolute top-0 right-0 px-[6px] py-[2px] rounded-bl-[8px] rounded-tr-[8px]"
-                                                >
-                                                    Coming Soon
-                                                </div>
+                                            <div onClick={() => {
+                                                navigate("/muUSD");
+                                            }} className="bg-[#F2F3F8] rounded-[8px] w-[150px] mb-[10px] h-[36px] flex items-center pl-[10px]">
+                                                muUSD
                                             </div>
                                         </MenuItem>
                                         {/* <MenuItem>

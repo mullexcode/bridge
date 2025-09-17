@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Select from "../components/Select";
 import Input from "../components/Input";
-import ETHIcon from "@/assets/images/ETH.png";
-import MetisIcon from "@/assets/images/metis.png";
+import USDCIcon from "@/assets/images/USDC.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, isAddress, MaxUint256 } from "ethers";
-import { useAccount, useReadContract, useSendTransaction } from "wagmi";
+import { useAccount, useReadContract, useSendTransaction, useSwitchChain } from "wagmi";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
@@ -15,58 +14,10 @@ import { toast } from "react-toastify";
 import Loading from "../components/Loading";
 import { Tooltip } from "react-tooltip";
 import TooltipIcon from "@/assets/images/tooltip.png";
+import { useAssetAddress } from "../hooks/useAssetAddress";
+import { CHAINS } from "../const/chain";
 
 import "react-tooltip/dist/react-tooltip.css";
-
-const chains = [
-  {
-    icon: ETHIcon,
-    label: "Ethereum",
-    symbol: "eth",
-    id: Number(import.meta.env.VITE_APP_ETH_CHAINID) || 1,
-  },
-  {
-    icon: MetisIcon,
-    label: "Metis",
-    symbol: "metis",
-    id: Number(import.meta.env.VITE_APP_METIS_CHAINID) || 1088,
-  },
-];
-
-const assets = [
-  {
-    icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
-    label: "muUSD",
-    symbol: "muUSD",
-    id: "muUSD",
-  },
-  // {
-  //   icon: USDCIcon,
-  //   label: "USDC",
-  //   symbol: "USDC",
-  //   id: "usdc",
-  // },
-];
-
-const tokens = {
-  [import.meta.env.VITE_APP_ETH_CHAINID]: {
-    muUSD: import.meta.env.VITE_APP_ETH_MUSD,
-    usdc: import.meta.env.VITE_APP_ETH_USDC,
-  },
-  [import.meta.env.VITE_APP_METIS_CHAINID]: {
-    muUSD: import.meta.env.VITE_APP_METIS_MUSD,
-    usdc: import.meta.env.VITE_APP_METIS_USDC,
-  } as const,
-};
-
-const contactAddress = {
-  [import.meta.env.VITE_APP_ETH_CHAINID]: import.meta.env.VITE_APP_ETH_CONTACT,
-  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env
-    .VITE_APP_METIS_CONTACT,
-} as const;
-
-type ChainId = keyof typeof tokens;
-type AssetType = keyof (typeof tokens)[ChainId];
 const Bridge: React.FC = () => {
   const [fromChain, setFromChain] = useState(0);
   const account = useAccount();
@@ -79,15 +30,49 @@ const Bridge: React.FC = () => {
   const [toAddress, setToAddress] = useState<string>(
     account.address?.toString() || ""
   );
+  const { switchChain } = useSwitchChain()
+
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
   // const { data: feeData } = useFeeData();
 
-  const currentContact = useMemo(() => {
-    return fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
-      ? contactAddress[Number(import.meta.env.VITE_APP_METIS_CHAINID)]
-      : contactAddress[Number(import.meta.env.VITE_APP_ETH_CHAINID)];
-  }, [fromChain]);
+  // 使用自定义hook获取assetAddress和currentContact
+  const { assetAddress, currentContact } = useAssetAddress({
+    fromChain,
+    selectedAsset
+  });
+
+  const assets = useMemo(() => {
+    if (
+      fromChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
+      toChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID)
+    ) {
+      return [
+        {
+          icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
+          label: "muUSD",
+          symbol: "muUSD",
+          id: "muUSD",
+        },
+        {
+          icon: USDCIcon,
+          label: "USDC",
+          symbol: "USDC",
+          id: "usdc",
+        },
+      ];
+    } else {
+      return [
+        {
+          icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
+          label: "muUSD",
+          symbol: "muUSD",
+          id: "muUSD",
+        },
+      ];
+    }
+  }, [fromChain, toChain]);
+
   useEffect(() => {
     if (account.address) {
       setToAddress(account.address.toString());
@@ -114,14 +99,7 @@ const Bridge: React.FC = () => {
     }
   }, [account.address]);
 
-  const assetAddress = useMemo(() => {
-    const targetChainId: ChainId =
-      fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
-        ? Number(import.meta.env.VITE_APP_METIS_CHAINID)
-        : Number(import.meta.env.VITE_APP_ETH_CHAINID);
-    const assetKey = selectedAsset as AssetType;
-    return tokens[targetChainId]?.[assetKey] as `0x${string}` | undefined;
-  }, [fromChain, selectedAsset]);
+
 
   const { data: tokenBalance } = useReadContract({
     address: assetAddress,
@@ -150,6 +128,7 @@ const Bridge: React.FC = () => {
     args: [account.address, currentContact],
     chainId: fromChain,
   });
+  console.log(allowance, "allowance")
   const submit = async () => {
     setLoading(true);
     try {
@@ -275,7 +254,7 @@ const Bridge: React.FC = () => {
     if (!account.address) {
       return "Transfer";
     } else if (fromChain && account.chainId !== fromChain) {
-      return "Wrong Network";
+      return "Switch network";
     } else if (amountError || !amount) {
       return "Enter amount";
     } else if (!overBalance) {
@@ -284,11 +263,14 @@ const Bridge: React.FC = () => {
       return "Insufficient pool size";
     } else if (addressError) {
       return "Invalid address";
+    } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
+      return "Approve";
     }
     return "Transfer";
   }, [
     amountError,
     amount,
+    allowance,
     account.address,
     account.chainId,
     fromChain,
@@ -312,14 +294,14 @@ const Bridge: React.FC = () => {
                 }
               }}
               value={fromChain}
-              options={chains}
+              options={CHAINS}
               placeholder="Select a chain"
               label="From"
             ></Select>
             <Select
               onChange={(value) => setToChain(Number(value))}
               value={toChain}
-              options={chains.filter((el) => el.id !== fromChain)}
+              options={CHAINS.filter((el) => el.id !== fromChain)}
               placeholder="Select a chain"
               label="To"
             ></Select>
@@ -338,8 +320,8 @@ const Bridge: React.FC = () => {
                 Balance:{" "}
                 {tokenBalance
                   ? new BigNumber(
-                      ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
-                    ).toString()
+                    ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
+                  ).toString()
                   : "--"}
               </div>
             </div>
@@ -425,14 +407,14 @@ const Bridge: React.FC = () => {
               <div className="bg-[#454464] text-[12px] font-normal text-left w-[285px] rounded-[14px]">
                 <p>The Base Fee: {selectedAsset ? "～0.5 muUSD" : "--"}</p>
                 <p className="mb-4">
-                  The Protocol Fee:{" "}
+                  The Liquidity Fees:{" "}
                   <span className="text-green-400">For Free!</span>
                 </p>
                 <p className="mb-4">
                   Base Fee is used to cover the gas cost for sending your
                   transfer to the chain.{" "}
                 </p>
-                <p>Protocol Fee is paid to Mullex as economic incentives.</p>
+                <p>Liquidity Fee is paid to Mullex as economic incentives.</p>
               </div>
             </Tooltip>
             <span>{selectedAsset ? "～0.5 muUSD" : "--"}</span>
@@ -450,8 +432,8 @@ const Bridge: React.FC = () => {
             <span>
               {allowance
                 ? new BigNumber(
-                    ethers.formatUnits(allowance?.toString() || 0, 6)
-                  ).gt(10000000000)
+                  ethers.formatUnits(allowance?.toString() || 0, 6)
+                ).gt(10000000000)
                   ? "MAX"
                   : ethers.formatEther(allowance?.toString() || 0)
                 : "--"}
@@ -487,8 +469,16 @@ const Bridge: React.FC = () => {
           //   hash: txHash,
           // });
           if (!submitDisabled) {
-            submit();
+            if (buttonText === "Switch network") {
+              switchChain({
+                chainId: fromChain
+              });
+            } else {
+              submit();
+            }
+
           }
+
         }}
         className={clsx(
           "container !mt-[20px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
@@ -497,9 +487,8 @@ const Bridge: React.FC = () => {
           }
         )}
       >
-        {loading ? "Pending..." : buttonText}
+        {loading && <Loading></Loading>} {loading ? "Pending..." : buttonText}
       </div>
-      {loading && <Loading></Loading>}
     </div>
   );
 };

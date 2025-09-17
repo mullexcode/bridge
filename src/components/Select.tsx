@@ -54,7 +54,7 @@ export default function Select({
               <img
                 alt=""
                 src={selected.icon}
-                className="w-[28px] h-[28px]"
+                className="w-[28px] rounded-full h-[28px]"
               ></img>
               <span className="text-[16px] font-semibold text-[#2C2C3F]">
                 {selected.label}
@@ -85,7 +85,7 @@ export default function Select({
               <img
                 alt=""
                 src={option.icon}
-                className="w-[28px] h-[28px]"
+                className="w-[28px] rounded-full h-[28px]"
               ></img>
               <div className="">{option.label}</div>
             </ListboxOption>

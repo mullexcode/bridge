@@ -3,6 +3,7 @@ import Bridge from './pages/Bridge';
 import './App.css';
 import Header from './components/Header';
 import Pool from './pages/Pool';
+import MuUSD from './pages/muUsd';
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
             <Route path="/" element={<Bridge />} />
             <Route path="/bridge" element={<Bridge />} />
             <Route path="/pool" element={<Pool />} />
+            <Route path="/muUSD" element={<MuUSD />} />
           </Routes>
         </main>
       </div>

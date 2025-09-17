@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Select from "../components/Select";
 import Input from "../components/Input";
-import ETHIcon from "@/assets/images/ETH.png";
 import USDCIcon from "@/assets/images/USDC.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
@@ -18,34 +17,15 @@ import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
 import clsx from "clsx";
 import { toast } from "react-toastify";
-// import { Tooltip } from "react-tooltip";
-import TooltipIcon from "@/assets/images/tooltip.png";
+import { CHAINS } from "../const/chain";
 
 import "react-tooltip/dist/react-tooltip.css";
 import Loading from "../components/Loading";
+import { useAssetAddress } from "../hooks/useAssetAddress";
 
-const chains = [
-  {
-    icon: ETHIcon,
-    label: "Ethereum",
-    symbol: "eth",
-    id: Number(import.meta.env.VITE_APP_ETH_CHAINID) || 1,
-  },
-  // {
-  //   icon: MetisIcon,
-  //   label: "Metis",
-  //   symbol: "metis",
-  //   id: Number(import.meta.env.VITE_APP_METIS_CHAINID),
-  // },
-];
+const chains = CHAINS.filter(el => el.symbol !== "metis")
 
 const assets = [
-  // {
-  //   icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
-  //   label: "muUSD",
-  //   symbol: "muUSD",
-  //   id: "muUSD",
-  // },
   {
     icon: USDCIcon,
     label: "USDC",
@@ -54,25 +34,6 @@ const assets = [
   },
 ];
 
-const tokens = {
-  [import.meta.env.VITE_APP_ETH_CHAINID]: {
-    muUSD: import.meta.env.VITE_APP_ETH_MUSD,
-    usdc: import.meta.env.VITE_APP_ETH_USDC,
-  },
-  [import.meta.env.VITE_APP_METIS_CHAINID]: {
-    muUSD: import.meta.env.VITE_APP_METIS_MUSD,
-    usdc: import.meta.env.VITE_APP_METIS_USDC,
-  } as const,
-};
-
-const contactAddress = {
-  [import.meta.env.VITE_APP_ETH_CHAINID]: import.meta.env.VITE_APP_ETH_CONTACT,
-  [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env
-    .VITE_APP_METIS_CONTACT,
-} as const;
-
-type ChainId = keyof typeof tokens;
-type AssetType = keyof (typeof tokens)[ChainId];
 const Pool: React.FC = () => {
   const [type, setType] = useState<"Add" | "Remove">("Add");
   const [fromChain, setFromChain] = useState(0);
@@ -83,20 +44,13 @@ const Pool: React.FC = () => {
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
   const { data: feeData } = useFeeData();
-  const currentContact = useMemo(() => {
-    return fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
-      ? contactAddress[Number(import.meta.env.VITE_APP_METIS_CHAINID)]
-      : contactAddress[Number(import.meta.env.VITE_APP_ETH_CHAINID)];
-  }, [fromChain]);
+  
+  // 使用自定义hook获取assetAddress和currentContact
+  const { assetAddress, currentContact } = useAssetAddress({
+    fromChain,
+    selectedAsset
+  });
 
-  const assetAddress = useMemo(() => {
-    const targetChainId: ChainId =
-      fromChain === Number(import.meta.env.VITE_APP_METIS_CHAINID)
-        ? Number(import.meta.env.VITE_APP_METIS_CHAINID)
-        : Number(import.meta.env.VITE_APP_ETH_CHAINID);
-    const assetKey = selectedAsset as AssetType;
-    return tokens[targetChainId]?.[assetKey] as `0x${string}` | undefined;
-  }, [fromChain, selectedAsset]);
   const { data: tokenBalance } = useReadContract({
     address: assetAddress,
     abi: Erc20Abi,
@@ -357,7 +311,7 @@ const Pool: React.FC = () => {
               className="flex items-center gap-[8px]"
             >
               Gas fee
-              <img alt="" src={TooltipIcon} className="w-[12px] h-[12px]"></img>
+              {/* <img alt="" src={TooltipIcon} className="w-[12px] h-[12px]"></img> */}
             </div>
             {/* {
               type !== "Add" && <Tooltip id="my-tooltip" className="!bg-[#454464] !rounded-[14px]">
@@ -402,13 +356,13 @@ const Pool: React.FC = () => {
           }
         )}
       >
+        {loading && <Loading></Loading>}
         {fromChain && account.chainId !== fromChain ? (
-          "Wrong Network"
+          "Switch network"
         ) : (
           <>{type} liquidity</>
         )}
       </div>
-      {loading && <Loading></Loading>}
     </div>
   );
 };
