@@ -52,6 +52,11 @@ const MuUSD: React.FC = () => {
     fromChain,
     selectedAsset
   });
+
+  const { assetAddress: USDCAddress, currentContact: toCurrentContact } = useAssetAddress({
+    fromChain: toChain,
+    selectedAsset: "usdc"
+  });
   useEffect(() => {
     if (account.address) {
       setToAddress(account.address.toString());
@@ -78,10 +83,19 @@ const MuUSD: React.FC = () => {
     args: [account.address, currentContact],
     chainId: fromChain,
   });
+
+  const { data: poolSize } = useReadContract({
+    address: USDCAddress,
+    abi: Erc20Abi,
+    functionName: "balanceOf",
+    args: [toCurrentContact],
+    chainId: toChain,
+  });
+
   const submit = async () => {
     if (
       new BigNumber(formatEther(balanceData?.value || "0")).lt(
-        gasFee === "--" ? 0.1 : new BigNumber(gasFee).times(1.5)
+        gasFee === "--" ? 0.00001 : new BigNumber(gasFee).times(1.5)
       )
     ) {
       toast.error("Insufficient gas");
@@ -143,9 +157,55 @@ const MuUSD: React.FC = () => {
     }
   };
 
+  const formatTokenBalance = useMemo(() => {
+    return ethers.formatUnits(tokenBalance?.toString() || 0, 6);
+  }, [tokenBalance]);
+
+  const isFlag = useMemo(() => {
+    return fromChain !== 0 && toChain === fromChain;
+  }, [fromChain, toChain]);
+
+  const { overBalance, overPoolSize } = useMemo(() => {
+    const _tokenBalance = ethers.formatUnits(tokenBalance?.toString() || 0, 6);
+    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
+    return {
+      overBalance: new BigNumber(amount).lte(_tokenBalance),
+      overPoolSize:
+        new BigNumber(amount).lte(_poolSize) || type === "Deposit",
+    }
+  }, [tokenBalance, amount, type, poolSize]);
+
   const submitDisabled = useMemo(() => {
-    return !(fromChain && new BigNumber(amount).gt(0) && selectedAsset);
-  }, [amount, fromChain, selectedAsset]);
+    return !(fromChain && new BigNumber(amount).gt(0) && selectedAsset && overPoolSize && overBalance);
+  }, [amount, fromChain, selectedAsset, overPoolSize, overBalance]);
+
+  const buttonText = useMemo(() => {
+    if (!account.address) {
+      return type;
+    } else if (fromChain && account.chainId !== fromChain) {
+      return "Switch network";
+    } else if (addressError) {
+      return "Invalid address";
+    } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
+      return "Approve";
+    } else if (!amount) {
+      return "Enter amount";
+    } else if (!overBalance) {
+      return "Insufficient balance";
+    } else if (!overPoolSize) {
+      return "Insufficient pool size";
+    }
+    return type;
+  }, [
+    amount,
+    account.address,
+    account.chainId,
+    allowance,
+    fromChain,
+    overBalance,
+    addressError,
+    overPoolSize,
+  ]);
 
   useEffect(() => {
     if (!submitDisabled) {
@@ -178,44 +238,6 @@ const MuUSD: React.FC = () => {
       setGasFee("--");
     }
   }, [selectedAsset, submitDisabled, amount]);
-
-  const formatTokenBalance = useMemo(() => {
-    return ethers.formatUnits(tokenBalance?.toString() || 0, 6);
-  }, [tokenBalance]);
-
-  const isFlag = useMemo(() => {
-    return fromChain !== 0 && toChain === fromChain;
-  }, [fromChain, toChain]);
-
-  const overBalance = useMemo(() => {
-    const _tokenBalance = ethers.formatUnits(tokenBalance?.toString() || 0, 6);
-    return new BigNumber(amount).lte(_tokenBalance);
-  }, [tokenBalance, amount]);
-
-  const buttonText = useMemo(() => {
-    if (!account.address) {
-      return type;
-    } else if (fromChain && account.chainId !== fromChain) {
-      return "Switch network";
-    } else if (!amount) {
-      return "Enter amount";
-    } else if (!overBalance) {
-      return "Insufficient balance";
-    } else if (addressError) {
-      return "Invalid address";
-    } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
-      return "Approve";
-    }
-    return type;
-  }, [
-    amount,
-    account.address,
-    account.chainId,
-    allowance,
-    fromChain,
-    overBalance,
-    addressError,
-  ]);
 
   return (
     <div className="max-md:w-[90vw]">
@@ -277,11 +299,7 @@ const MuUSD: React.FC = () => {
               placeholder={"Please input amount"}
               value={amount}
               onChange={(e) => {
-                if (new BigNumber(e).lte(formatTokenBalance) || e === "") {
-                  setAmount(e);
-                } else {
-                  setAmount(formatTokenBalance);
-                }
+                setAmount(e);
               }}
             ></Input>
             <img
@@ -352,7 +370,7 @@ const MuUSD: React.FC = () => {
                     <span className="text-green-400">For Free!</span>
                   ) : (
                     <span>
-                      {new BigNumber(0.03).times(amount || 0).decimalPlaces(2, 1).toString()}{" "}
+                      {new BigNumber(0.0003).times(amount || 0).decimalPlaces(4, 1).toString()}{" "}
                       {type === "Deposit" ? "USDC" : "muUSD"}
                     </span>
                   )}
@@ -374,8 +392,8 @@ const MuUSD: React.FC = () => {
                         ? "0.5"
                         : "0.1"
                     )
-                      .plus(new BigNumber(0.03).times(amount || 0))
-                      .decimalPlaces(2, 1).toString()
+                      .plus(new BigNumber(0.0003).times(amount || 0))
+                      .decimalPlaces(4, 1).toString()
                     : "0"
                   } ${type === "Deposit" ? "USDC" : "muUSD"}`
                   : "--"}
@@ -395,16 +413,16 @@ const MuUSD: React.FC = () => {
           </div>
           <div className="flex items-center mb-3  h-[18px] justify-between">
             <span>Estimated time of arrival</span>
-            <span>1-5Mins</span>
+            <span>1-5&nbsp;Mins</span>
           </div>
-          <div className="flex items-center mb-3  h-[18px] justify-between">
+          {/* <div className="flex items-center mb-3  h-[18px] justify-between">
             <span>Receive</span>
             <span>
               {amount
                 ? `${amount} ${type === "Deposit" ? "muUSD" : "USDC"}`
                 : "--"}
             </span>
-          </div>
+          </div> */}
         </div>
       </main>
 
@@ -422,13 +440,17 @@ const MuUSD: React.FC = () => {
               submit();
             }
 
+          } else if (buttonText === "Switch network") {
+            switchChain({
+              chainId: fromChain
+            });
           }
 
         }}
         className={clsx(
           "container !mt-[20px] gap-[8px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
           {
-            "cursor-not-allowed opacity-40": submitDisabled || loading,
+            "cursor-not-allowed opacity-40": (submitDisabled || loading) && buttonText !== "Switch network",
           }
         )}
       >

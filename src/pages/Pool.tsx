@@ -11,6 +11,7 @@ import {
   useFeeData,
   useReadContract,
   useSendTransaction,
+  useSwitchChain,
 } from "wagmi";
 import { estimateGas, waitForTransactionReceipt } from "@wagmi/core";
 import { config } from "../main";
@@ -44,7 +45,8 @@ const Pool: React.FC = () => {
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
   const { data: feeData } = useFeeData();
-  
+  const { switchChain } = useSwitchChain();
+
   // 使用自定义hook获取assetAddress和currentContact
   const { assetAddress, currentContact } = useAssetAddress({
     fromChain,
@@ -82,7 +84,7 @@ const Pool: React.FC = () => {
   const submit = async () => {
     if (
       new BigNumber(formatEther(balanceData?.value || "0")).lt(
-        gasFee === "--" ? 0.1 : new BigNumber(gasFee).times(1.5)
+        gasFee === "--" ? 0.00001 : new BigNumber(gasFee).times(1.5)
       )
     ) {
       toast.error("Insufficient gas");
@@ -259,6 +261,10 @@ const Pool: React.FC = () => {
                 placeholder={"0"}
                 value={amount}
                 onChange={(e) => {
+                  if (e === "") {
+                    setAmount("")
+                    return
+                  }
                   if (new BigNumber(e).lte(formatTokenBalance)) {
                     setAmount(e);
                   } else {
@@ -294,26 +300,30 @@ const Pool: React.FC = () => {
                 placeholder={"0"}
                 value={amount}
                 onChange={(e) => {
+                   if (e === "") {
+                    setAmount("")
+                    return
+                  }
                   if (new BigNumber(e).lte(liquidity || 0)) {
                     setAmount(e);
                   } else {
-                    setAmount(formatTokenBalance);
+                    setAmount(liquidity);
                   }
                 }}
               ></Input>
             </div>
           )}
         </div>
-        <div className="p-[16px] text-[14px]font-medium text-[#FFFFFF]">
+        {/* <div className="p-[16px] text-[14px]font-medium text-[#FFFFFF]">
           <div className="flex items-center h-[18px] justify-between">
             <div
               data-tooltip-id="my-tooltip"
               className="flex items-center gap-[8px]"
             >
               Gas fee
-              {/* <img alt="" src={TooltipIcon} className="w-[12px] h-[12px]"></img> */}
+              <img alt="" src={TooltipIcon} className="w-[12px] h-[12px]"></img>
             </div>
-            {/* {
+            {
               type !== "Add" && <Tooltip id="my-tooltip" className="!bg-[#454464] !rounded-[14px]">
                 <div className="bg-[#454464] text-[12px] font-normal text-left rounded-[14px]">
                   <p>he Base Fee: ～{gasFee || "--"} {gasFee && gasFee !== '--' ? (fromChain === Number(import.meta.env.VITE_APP_ETH_CHAINID) ? 'ETH' : "METIS") : ""}</p>
@@ -327,7 +337,7 @@ const Pool: React.FC = () => {
                   </p>
                 </div>
               </Tooltip>
-            } */}
+            }
             <span>
               {gasFee || "--"}{" "}
               {gasFee && gasFee !== "--"
@@ -337,7 +347,7 @@ const Pool: React.FC = () => {
                 : ""}
             </span>
           </div>
-        </div>
+        </div> */}
       </main>
 
       <div
@@ -346,7 +356,17 @@ const Pool: React.FC = () => {
         }}
         onClick={() => {
           if (!submitDisabled && !loading) {
-            submit();
+            if (fromChain && account.chainId !== fromChain) {
+              switchChain({
+                chainId: fromChain
+              });
+            } else {
+              submit();
+            }
+          } else if (fromChain && account.chainId !== fromChain) {
+            switchChain({
+              chainId: fromChain
+            });
           }
         }}
         className={clsx(

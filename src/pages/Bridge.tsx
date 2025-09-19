@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Select from "../components/Select";
 import Input from "../components/Input";
 import USDCIcon from "@/assets/images/USDC.png";
+import MuUSDIcon from "@/assets/images/muUSD.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, isAddress, MaxUint256 } from "ethers";
@@ -42,6 +43,11 @@ const Bridge: React.FC = () => {
     selectedAsset
   });
 
+  const { assetAddress: toAssetAddress, currentContact: toCurrentContact } = useAssetAddress({
+    fromChain: toChain,
+    selectedAsset,
+  });
+
   const assets = useMemo(() => {
     if (
       fromChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
@@ -49,7 +55,7 @@ const Bridge: React.FC = () => {
     ) {
       return [
         {
-          icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
+          icon: MuUSDIcon,
           label: "muUSD",
           symbol: "muUSD",
           id: "muUSD",
@@ -64,7 +70,7 @@ const Bridge: React.FC = () => {
     } else {
       return [
         {
-          icon: "https://assets.coingecko.com/coins/images/53815/standard/musd_%281%29.png",
+          icon: MuUSDIcon,
           label: "muUSD",
           symbol: "muUSD",
           id: "muUSD",
@@ -114,11 +120,11 @@ const Bridge: React.FC = () => {
   // });
 
   const { data: poolSize } = useReadContract({
-    address: assetAddress,
+    address: toAssetAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
-    args: [currentContact],
-    chainId: fromChain,
+    args: [toCurrentContact],
+    chainId: toChain,
   });
 
   const { data: allowance } = useReadContract({
@@ -128,7 +134,6 @@ const Bridge: React.FC = () => {
     args: [account.address, currentContact],
     chainId: fromChain,
   });
-  console.log(allowance, "allowance")
   const submit = async () => {
     setLoading(true);
     try {
@@ -250,21 +255,26 @@ const Bridge: React.FC = () => {
   //     setGasFee("--")
   //   }
   // }, [selectedAsset, submitDisabled, amount, toChain, toAddress])
+  const selectedAssetFormat = useMemo(() => {
+    return selectedAsset === "muUSD" ? selectedAsset : selectedAsset.toLocaleUpperCase();
+  }, [selectedAsset]);
+
+
   const buttonText = useMemo(() => {
     if (!account.address) {
       return "Transfer";
     } else if (fromChain && account.chainId !== fromChain) {
       return "Switch network";
+    } else if (addressError) {
+      return "Invalid address";
+    } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
+      return "Approve";
     } else if (amountError || !amount) {
       return "Enter amount";
     } else if (!overBalance) {
       return "Insufficient balance";
     } else if (!overPoolSize) {
       return "Insufficient pool size";
-    } else if (addressError) {
-      return "Invalid address";
-    } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
-      return "Approve";
     }
     return "Transfer";
   }, [
@@ -394,8 +404,8 @@ const Bridge: React.FC = () => {
             )}
           </div>
         </div>
-        <div className="p-[16px] text-[14px] font-medium text-[#FFFFFF]">
-          <div className="flex items-center mb-3 h-[18px] justify-between">
+        <div className="p-[16px] text-[14px] text-[#FFFFFF]">
+          <div className="flex items-center h-[18px] mb-3  justify-between">
             <div
               data-tooltip-id="my-tooltip"
               className="flex items-center gap-[8px]"
@@ -405,10 +415,25 @@ const Bridge: React.FC = () => {
             </div>
             <Tooltip id="my-tooltip" className="!bg-[#454464] !rounded-[14px]">
               <div className="bg-[#454464] text-[12px] font-normal text-left w-[285px] rounded-[14px]">
-                <p>The Base Fee: {selectedAsset ? "～0.5 muUSD" : "--"}</p>
+                <p>
+                  The Base Fee:{" "}
+                  {selectedAssetFormat
+                    ? `～${fromChain.toString() === import.meta.env.VITE_APP_ETH_CHAINID.toString()
+                      ? "0.5"
+                      : "0.1"
+                    } ${selectedAssetFormat}`
+                    : "--"}
+                </p>
                 <p className="mb-4">
                   The Liquidity Fees:{" "}
-                  <span className="text-green-400">For Free!</span>
+                  {(!selectedAssetFormat || selectedAssetFormat === 'muUSD') ? (
+                    <span className="text-green-400">For Free!</span>
+                  ) : (
+                    <span>
+                      {new BigNumber(0.0003).times(amount || 0).decimalPlaces(4, 1).toString()}{" "}
+                      {selectedAssetFormat}
+                    </span>
+                  )}
                 </p>
                 <p className="mb-4">
                   Base Fee is used to cover the gas cost for sending your
@@ -417,8 +442,22 @@ const Bridge: React.FC = () => {
                 <p>Liquidity Fee is paid to Mullex as economic incentives.</p>
               </div>
             </Tooltip>
-            <span>{selectedAsset ? "～0.5 muUSD" : "--"}</span>
+            <span>
+              {selectedAssetFormat
+                ? `～${fromChain
+                  ? new BigNumber(
+                    fromChain.toString() === import.meta.env.VITE_APP_ETH_CHAINID.toString()
+                      ? "0.5"
+                      : "0.1"
+                  )
+                    .plus(new BigNumber(selectedAssetFormat === 'muUSD' ? 0 : 0.0003).times(amount || 0))
+                    .decimalPlaces(4, 1).toString()
+                  : "0"
+                } ${selectedAssetFormat}`
+                : "--"}
+            </span>
           </div>
+
           {/* <div className="flex items-center h-[18px] mb-3 justify-between">
             <span>Balance</span>
             <span>{tokenBalance ? new BigNumber(ethers.formatUnits((tokenBalance.toString() || 0), 6) || 0).toString() : '--'}</span>
@@ -441,7 +480,7 @@ const Bridge: React.FC = () => {
           </div>
           <div className="flex items-center h-[18px] justify-between">
             <span>Estimated time of arrival</span>
-            <span>1-5Mins</span>
+            <span>1-5&nbsp;Mins</span>
           </div>
         </div>
       </main>
@@ -476,14 +515,16 @@ const Bridge: React.FC = () => {
             } else {
               submit();
             }
-
+          } else if (buttonText === "Switch network") {
+            switchChain({
+              chainId: fromChain
+            });
           }
-
         }}
         className={clsx(
           "container !mt-[20px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
           {
-            "cursor-not-allowed opacity-40": submitDisabled || loading,
+            "cursor-not-allowed opacity-40": (submitDisabled || loading) && buttonText !== "Switch network",
           }
         )}
       >

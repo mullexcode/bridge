@@ -80,7 +80,7 @@ export default function Select({
             <ListboxOption
               key={option.id}
               value={option.id}
-              className="bg-[#E7E9F2] text-[#2C2C3F] text-[16px] font-semibold cursor-pointer hover:bg-white flex items-center gap-[12px] py-[15px] px-[26px]"
+              className={`bg-white text-[#2C2C3F] text-[16px] font-semibold cursor-pointer hover:bg-[#E7E9F2] flex items-center gap-[12px] py-[15px] px-[26px] ${value.toString() === option.id.toString() ? '!bg-[#E7E9F2]' : ''}`}
             >
               <img
                 alt=""

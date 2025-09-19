@@ -146,7 +146,7 @@ export default function Header() {
                             className={clsx(
                                 "text-gray-600 cursor-pointer transition-colors",
                                 {
-                                    "text-[#5F4BD9] font-semibold": location.pathname === "/pool",
+                                    "!text-[#5F4BD9] font-semibold": location.pathname === "/pool",
                                 }
                             )}
                         >
