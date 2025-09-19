@@ -3,16 +3,14 @@ import Select from "../components/Select";
 import Input from "../components/Input";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
-import { ethers, formatEther, Interface, isAddress, MaxUint256 } from "ethers";
+import { ethers, Interface, isAddress, MaxUint256 } from "ethers";
 import {
   useAccount,
-  useBalance,
-  useFeeData,
   useReadContract,
   useSendTransaction,
   useSwitchChain,
 } from "wagmi";
-import { estimateGas, waitForTransactionReceipt } from "@wagmi/core";
+import { waitForTransactionReceipt } from "@wagmi/core";
 import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
 import clsx from "clsx";
@@ -39,11 +37,9 @@ const MuUSD: React.FC = () => {
   );
   const { switchChain } = useSwitchChain();
   const [addressError, setAddressError] = useState("");
-  const [gasFee, setGasFee] = useState("--");
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
-  const { data: feeData } = useFeeData();
   const selectedAsset = useMemo(() => {
     return type === "Deposit" ? "usdc" : "muUSD";
   }, [type]);
@@ -71,11 +67,6 @@ const MuUSD: React.FC = () => {
     chainId: fromChain,
   });
 
-  // 获取当前链的原生代币余额
-  const { data: balanceData } = useBalance({
-    address: account.address,
-  });
-
   const { data: allowance } = useReadContract({
     address: assetAddress,
     abi: Erc20Abi,
@@ -93,14 +84,6 @@ const MuUSD: React.FC = () => {
   });
 
   const submit = async () => {
-    if (
-      new BigNumber(formatEther(balanceData?.value || "0")).lt(
-        gasFee === "--" ? 0.00001 : new BigNumber(gasFee).times(1.5)
-      )
-    ) {
-      toast.error("Insufficient gas");
-      return;
-    }
     setLoading(true);
     try {
       if (allowance && new BigNumber(allowance.toString()).gt(amount)) {
@@ -176,7 +159,7 @@ const MuUSD: React.FC = () => {
   }, [tokenBalance, amount, type, poolSize]);
 
   const submitDisabled = useMemo(() => {
-    return !(fromChain && new BigNumber(amount).gt(0) && selectedAsset && overPoolSize && overBalance);
+    return !(fromChain && new BigNumber(amount).gt(0) && selectedAsset && overPoolSize);
   }, [amount, fromChain, selectedAsset, overPoolSize, overBalance]);
 
   const buttonText = useMemo(() => {
@@ -190,8 +173,6 @@ const MuUSD: React.FC = () => {
       return "Approve";
     } else if (!amount) {
       return "Enter amount";
-    } else if (!overBalance) {
-      return "Insufficient balance";
     } else if (!overPoolSize) {
       return "Insufficient pool size";
     }
@@ -202,42 +183,9 @@ const MuUSD: React.FC = () => {
     account.chainId,
     allowance,
     fromChain,
-    overBalance,
     addressError,
     overPoolSize,
   ]);
-
-  useEffect(() => {
-    if (!submitDisabled) {
-      const iface = new Interface(bridgeAbi);
-      const depositData = iface.encodeFunctionData(
-        type === "Deposit" ? "mappingMUSD" : "withdrawUSD",
-        ["usdc", toChain, toAddress, ethers.parseUnits(amount, 6)]
-      );
-      try {
-        estimateGas(config, {
-          account: account.address,
-          to: currentContact as `0x${string}`,
-          data: depositData as `0x${string}`,
-          chainId: fromChain as any,
-        }).then((gasEstimateRes) => {
-          setGasFee(
-            ethers
-              .formatEther(
-                new BigNumber(gasEstimateRes)
-                  .times(feeData?.maxFeePerGas || 0)
-                  .toString()
-              )
-              .toString()
-          );
-        });
-      } catch (error) {
-        setGasFee("--");
-      }
-    } else {
-      setGasFee("--");
-    }
-  }, [selectedAsset, submitDisabled, amount]);
 
   return (
     <div className="max-md:w-[90vw]">

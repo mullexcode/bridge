@@ -213,7 +213,6 @@ const Bridge: React.FC = () => {
       isAddress(toAddress) &&
       !amountError &&
       new BigNumber(amount).gt(0) &&
-      overBalance &&
       overPoolSize &&
       selectedAsset
     );
@@ -226,6 +225,7 @@ const Bridge: React.FC = () => {
     tokenBalance,
     poolSize,
     toAddress,
+    overPoolSize,
     toChain,
   ]);
 
@@ -271,8 +271,6 @@ const Bridge: React.FC = () => {
       return "Approve";
     } else if (amountError || !amount) {
       return "Enter amount";
-    } else if (!overBalance) {
-      return "Insufficient balance";
     } else if (!overPoolSize) {
       return "Insufficient pool size";
     }
