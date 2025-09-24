@@ -4,6 +4,7 @@ import './App.css';
 import Header from './components/Header';
 import Pool from './pages/Pool';
 import MuUSD from './pages/muUsd';
+import Home from './pages/Home';
 
 function App() {
   return (
@@ -20,8 +21,9 @@ function App() {
         <main className="flex-grow w-full flex max-md:pt-[64px] md:items-center justify-center">
           <Header></Header>
           <Routes>
-            <Route path="/" element={<Bridge />} />
+            <Route path="/" element={<Home />} />
             <Route path="/bridge" element={<Bridge />} />
+            <Route path="/app" element={<Home />} />
             <Route path="/pool" element={<Pool />} />
             <Route path="/muUSD" element={<MuUSD />} />
           </Routes>

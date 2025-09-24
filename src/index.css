@@ -1,6 +1,33 @@
 @import "tailwindcss";
 
-
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/font/Inter-Light-7.otf") format("opentype");
+  font-weight: 300;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/font/Inter-Medium-8.otf") format("opentype");
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Inter";
+  src: url("./assets/font/Inter-SemiBold-10.otf") format("opentype");
+  font-weight: 600;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "lack";
+  src: url("./assets/font/lack-regular-2.otf") format("opentype");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
 :root {
   font-family: Geist, Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   font-synthesis: none;

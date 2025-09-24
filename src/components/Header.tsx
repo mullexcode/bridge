@@ -19,6 +19,7 @@ export default function Header() {
     const { disconnect } = useDisconnect();
     const chainId = useChainId();
     const [isReconnecting, setIsReconnecting] = useState(false);
+    
     useEffect(() => {
         if (isConnected && address && connector && chainId) {
             const connectionInfo: any = {
@@ -70,10 +71,12 @@ export default function Header() {
         disconnect();
         localStorage.removeItem(STORAGE_KEY);
     };
-
+    if (location.pathname === '/app' || location.pathname === '/') {
+        return <></>
+    }
 
     return (
-        <header className="w-full fixed px-4 py-3 top-0 z-10">
+        <header className="w-full md:max-w-[1280px] md:mx-auto fixed px-4 py-3 top-0 z-10">
             <div className="mx-auto flex justify-between items-center">
                 <div className="flex items-center space-x-4 md:space-x-8">
                     <div className="flex items-center gap-[12px]">
