@@ -25,7 +25,7 @@ import { Tooltip } from "react-tooltip";
 import { CHAINS } from "../const/chain";
 import { useAssetAddress } from "../hooks/useAssetAddress";
 
-const chains = CHAINS.filter(el => el.symbol !== "metis")
+const chains = CHAINS;
 
 const MuUSD: React.FC = () => {
   const [type, setType] = useState<"Deposit" | "Redeem">("Deposit");
@@ -35,6 +35,7 @@ const MuUSD: React.FC = () => {
   const [toAddress, setToAddress] = useState<string>(
     account.address?.toString() || ""
   );
+  const [amountError, setAmountError] = useState("");
   const { switchChain } = useSwitchChain();
   const [addressError, setAddressError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,13 +47,14 @@ const MuUSD: React.FC = () => {
   // 使用自定义hook获取assetAddress和currentContact
   const { assetAddress, currentContact } = useAssetAddress({
     fromChain,
-    selectedAsset
+    selectedAsset,
   });
 
-  const { assetAddress: USDCAddress, currentContact: toCurrentContact } = useAssetAddress({
-    fromChain: toChain,
-    selectedAsset: "usdc"
-  });
+  const { assetAddress: USDCAddress, currentContact: toCurrentContact } =
+    useAssetAddress({
+      fromChain: toChain,
+      selectedAsset: "usdc",
+    });
   useEffect(() => {
     if (account.address) {
       setToAddress(account.address.toString());
@@ -148,44 +150,61 @@ const MuUSD: React.FC = () => {
     return fromChain !== 0 && toChain === fromChain;
   }, [fromChain, toChain]);
 
-  const { overBalance, overPoolSize } = useMemo(() => {
-    const _tokenBalance = ethers.formatUnits(tokenBalance?.toString() || 0, 6);
-    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
-    return {
-      overBalance: new BigNumber(amount).lte(_tokenBalance),
-      overPoolSize:
-        new BigNumber(amount).lte(_poolSize) || type === "Deposit",
-    }
-  }, [tokenBalance, amount, type, poolSize]);
+  // const { overBalance, overPoolSize } = useMemo(() => {
+  //   const _tokenBalance = ethers.formatUnits(tokenBalance?.toString() || 0, 6);
+  //   const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
+  //   return {
+  //     overBalance: new BigNumber(amount).lte(_tokenBalance),
+  //     overPoolSize: new BigNumber(amount).lte(_poolSize) || type === "Deposit",
+  //   };
+  // }, [tokenBalance, amount, type, poolSize]);
 
   const submitDisabled = useMemo(() => {
-    return !(fromChain && new BigNumber(amount).gt(0) && selectedAsset && overPoolSize);
-  }, [amount, fromChain, selectedAsset, overPoolSize, overBalance]);
+    return !(
+      !loading &&
+      isAddress(toAddress) &&
+      !amountError &&
+      new BigNumber(amount).gt(0)
+    );
+  }, [
+    loading,
+    amount,
+    amountError,
+    toAddress,
+  ]);
+
 
   const buttonText = useMemo(() => {
     if (!account.address) {
-      return type;
+      return "Transfer";
     } else if (fromChain && account.chainId !== fromChain) {
       return "Switch network";
-    } else if (addressError) {
-      return "Invalid address";
     } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
       return "Approve";
-    } else if (!amount) {
-      return "Enter amount";
-    } else if (!overPoolSize) {
-      return "Insufficient pool size";
+    } else if (loading) {
+      return "Pending...";
     }
-    return type;
+    return "Transfer";
   }, [
     amount,
+    allowance,
     account.address,
     account.chainId,
-    allowance,
     fromChain,
-    addressError,
-    overPoolSize,
+    loading,
   ]);
+
+
+  const baseFee = useMemo(() => {
+    return fromChain.toString() ===
+      import.meta.env.VITE_APP_ETH_CHAINID.toString()
+      ? "0.5"
+      : "0.1";
+  }, [fromChain]);
+
+  const liquidityFees = useMemo(() => {
+    return new BigNumber(0.0003).times(amount || 0).toString();
+  }, [amount]);
 
   return (
     <div className="max-md:w-[90vw]">
@@ -226,7 +245,11 @@ const MuUSD: React.FC = () => {
                 setFromChain(Number(value));
               }}
               value={fromChain}
-              options={chains}
+              options={chains.filter(
+                (el) =>
+                  (el.symbol !== "metis" && el.symbol !== "goat") ||
+                  type !== "Deposit"
+              )}
               placeholder="Select a chain"
               label={
                 type === "Deposit" ? "Deposit USDC from" : "Burn muUSD from"
@@ -247,6 +270,12 @@ const MuUSD: React.FC = () => {
               placeholder={"Please input amount"}
               value={amount}
               onChange={(e) => {
+                e = e.replace(/^\D*(\d*(?:\.\d{0,10})?).*$/g, '$1')
+                if (new BigNumber(e).lt(new BigNumber(baseFee).plus(liquidityFees))) {
+                  setAmountError(
+                    "Amount must be greater than total fees"
+                  );
+                }
                 setAmount(e);
               }}
             ></Input>
@@ -258,7 +287,11 @@ const MuUSD: React.FC = () => {
             <Select
               onChange={(value) => setToChain(Number(value))}
               value={toChain}
-              options={chains}
+              options={chains.filter(
+                (el) =>
+                  (el.symbol !== "metis" && el.symbol !== "goat") ||
+                  type === "Deposit"
+              )}
               placeholder="Select a chain"
               label={type === "Deposit" ? "Get muUSD to" : "Get USDC to"}
             ></Select>
@@ -306,10 +339,7 @@ const MuUSD: React.FC = () => {
                   {isFlag
                     ? `0 ${type === "Deposit" ? "USDC" : "muUSD"}`
                     : fromChain
-                      ? `～${fromChain.toString() === import.meta.env.VITE_APP_ETH_CHAINID.toString()
-                        ? "0.5"
-                        : "0.1"
-                      } ${type === "Deposit" ? "USDC" : "muUSD"}`
+                      ? `～${baseFee} ${type === "Deposit" ? "USDC" : "muUSD"}`
                       : "--"}
                 </p>
                 <p className="mb-4">
@@ -318,7 +348,9 @@ const MuUSD: React.FC = () => {
                     <span className="text-green-400">For Free!</span>
                   ) : (
                     <span>
-                      {new BigNumber(0.0003).times(amount || 0).decimalPlaces(4, 1).toString()}{" "}
+                      {new BigNumber(liquidityFees)
+                        .decimalPlaces(4, 1)
+                        .toString()}{" "}
                       {type === "Deposit" ? "USDC" : "muUSD"}
                     </span>
                   )}
@@ -335,13 +367,10 @@ const MuUSD: React.FC = () => {
                 ? `0 ${type === "Deposit" ? "USDC" : "muUSD"}`
                 : assetAddress
                   ? `～${fromChain
-                    ? new BigNumber(
-                      fromChain.toString() === import.meta.env.VITE_APP_ETH_CHAINID.toString()
-                        ? "0.5"
-                        : "0.1"
-                    )
-                      .plus(new BigNumber(0.0003).times(amount || 0))
-                      .decimalPlaces(4, 1).toString()
+                    ? new BigNumber(baseFee)
+                      .plus(liquidityFees)
+                      .decimalPlaces(4, 1)
+                      .toString()
                     : "0"
                   } ${type === "Deposit" ? "USDC" : "muUSD"}`
                   : "--"}
@@ -378,8 +407,8 @@ const MuUSD: React.FC = () => {
         style={{
           background: "linear-gradient(90deg, #08C8B5 0%, #9A20DD 100%)",
         }}
-        onClick={() => {
-          if (!submitDisabled && !loading) {
+        onClick={async () => {
+          if (!submitDisabled) {
             if (buttonText === "Switch network") {
               switchChain({
                 chainId: fromChain,
@@ -387,18 +416,17 @@ const MuUSD: React.FC = () => {
             } else {
               submit();
             }
-
           } else if (buttonText === "Switch network") {
             switchChain({
-              chainId: fromChain
+              chainId: fromChain,
             });
           }
-
         }}
         className={clsx(
           "container !mt-[20px] gap-[8px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
           {
-            "cursor-not-allowed opacity-40": (submitDisabled || loading) && buttonText !== "Switch network",
+            "cursor-not-allowed opacity-40":
+              (submitDisabled || loading) && buttonText !== "Switch network",
           }
         )}
       >

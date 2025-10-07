@@ -1,6 +1,7 @@
 import ETHIcon from "@/assets/images/ETH.png";
 import MetisIcon from "@/assets/images/metis.png";
 import LineaIcon from "@/assets/images/linea.png";
+import GoatIcon from "@/assets/images/goat.jpg";
 
 export const CHAINS = [
   {
@@ -21,12 +22,22 @@ export const CHAINS = [
     symbol: "linea",
     id: Number(import.meta.env.VITE_APP_LINEA_CHAINID) || 1,
   },
+  {
+    icon: GoatIcon,
+    label: "Goat",
+    symbol: "goat",
+    id: Number(import.meta.env.VITE_APP_GOAT_CHAINID) || 1,
+  },
 ];
 
 export const TOKENS = {
   [import.meta.env.VITE_APP_ETH_CHAINID]: {
     muUSD: import.meta.env.VITE_APP_ETH_MUSD,
     usdc: import.meta.env.VITE_APP_ETH_USDC,
+  },
+  [import.meta.env.VITE_APP_GOAT_CHAINID]: {
+    muUSD: import.meta.env.VITE_APP_GOAT_MUSD,
+    usdc: import.meta.env.VITE_APP_GOAT_USDC,
   },
   [import.meta.env.VITE_APP_LINEA_CHAINID]: {
     muUSD: import.meta.env.VITE_APP_LINEA_MUSD,
@@ -40,6 +51,8 @@ export const TOKENS = {
 
 export const CONTACT_ADDRESS = {
   [import.meta.env.VITE_APP_ETH_CHAINID]: import.meta.env.VITE_APP_ETH_CONTACT,
+  [import.meta.env.VITE_APP_GOAT_CHAINID]: import.meta.env
+    .VITE_APP_GOAT_CONTACT,
   [import.meta.env.VITE_APP_LINEA_CHAINID]: import.meta.env
     .VITE_APP_LINEA_CONTACT,
   [import.meta.env.VITE_APP_METIS_CHAINID]: import.meta.env

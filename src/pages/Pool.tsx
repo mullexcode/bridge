@@ -24,7 +24,7 @@ import "react-tooltip/dist/react-tooltip.css";
 import Loading from "../components/Loading";
 import { useAssetAddress } from "../hooks/useAssetAddress";
 
-const chains = CHAINS.filter(el => el.symbol !== "metis")
+const chains = CHAINS.filter(el => el.symbol !== "metis" && el.symbol !== "goat")
 
 const assets = [
   {
@@ -261,6 +261,7 @@ const Pool: React.FC = () => {
                 placeholder={"0"}
                 value={amount}
                 onChange={(e) => {
+                  e = e.replace(/^\D*(\d*(?:\.\d{0,10})?).*$/g, '$1')
                   if (e === "") {
                     setAmount("")
                     return
@@ -300,7 +301,7 @@ const Pool: React.FC = () => {
                 placeholder={"0"}
                 value={amount}
                 onChange={(e) => {
-                   if (e === "") {
+                  if (e === "") {
                     setAmount("")
                     return
                   }

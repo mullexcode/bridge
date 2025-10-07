@@ -6,7 +6,12 @@ import MuUSDIcon from "@/assets/images/muUSD.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, isAddress, MaxUint256 } from "ethers";
-import { useAccount, useReadContract, useSendTransaction, useSwitchChain } from "wagmi";
+import {
+  useAccount,
+  useReadContract,
+  useSendTransaction,
+  useSwitchChain,
+} from "wagmi";
 import { waitForTransactionReceipt } from "@wagmi/core";
 import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
@@ -31,7 +36,7 @@ const Bridge: React.FC = () => {
   const [toAddress, setToAddress] = useState<string>(
     account.address?.toString() || ""
   );
-  const { switchChain } = useSwitchChain()
+  const { switchChain } = useSwitchChain();
 
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
@@ -40,19 +45,26 @@ const Bridge: React.FC = () => {
   // 使用自定义hook获取assetAddress和currentContact
   const { assetAddress, currentContact } = useAssetAddress({
     fromChain,
-    selectedAsset
-  });
-
-  const { assetAddress: toAssetAddress, currentContact: toCurrentContact } = useAssetAddress({
-    fromChain: toChain,
     selectedAsset,
   });
 
-  const assets = useMemo(() => {
-    if (
+  const { assetAddress: toAssetAddress, currentContact: toCurrentContact } =
+    useAssetAddress({
+      fromChain: toChain,
+      selectedAsset,
+    });
+
+  const hasUsdc = useMemo(() => {
+    return (
       fromChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
-      toChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID)
-    ) {
+      toChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
+      fromChain !== Number(import.meta.env.VITE_APP_GOAT_CHAINID) &&
+      toChain !== Number(import.meta.env.VITE_APP_GOAT_CHAINID)
+    );
+  }, [fromChain, toChain]);
+
+  const assets = useMemo(() => {
+    if (hasUsdc) {
       return [
         {
           icon: MuUSDIcon,
@@ -104,8 +116,6 @@ const Bridge: React.FC = () => {
       );
     }
   }, [account.address]);
-
-
 
   const { data: tokenBalance } = useReadContract({
     address: assetAddress,
@@ -194,39 +204,18 @@ const Bridge: React.FC = () => {
     }
   };
 
-  const { overBalance, overPoolSize } = useMemo(() => {
-    const _tokenBalance = ethers.formatUnits(tokenBalance?.toString() || 0, 6);
-    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
-    return {
-      overBalance: new BigNumber(amount).lte(_tokenBalance),
-      overPoolSize:
-        new BigNumber(amount).lte(_poolSize) || selectedAsset === "muUSD",
-    };
-  }, [tokenBalance, poolSize, amount]);
-
   const submitDisabled = useMemo(() => {
     return !(
-      fromChain &&
-      toChain &&
-      toAddress &&
-      account.address &&
+      !loading &&
       isAddress(toAddress) &&
       !amountError &&
-      new BigNumber(amount).gt(0) &&
-      overPoolSize &&
-      selectedAsset
+      new BigNumber(amount).gt(0)
     );
   }, [
+    loading,
     amount,
-    fromChain,
-    selectedAsset,
-    account.address,
     amountError,
-    tokenBalance,
-    poolSize,
     toAddress,
-    overPoolSize,
-    toChain,
   ]);
 
   // useEffect(() => {
@@ -256,36 +245,45 @@ const Bridge: React.FC = () => {
   //   }
   // }, [selectedAsset, submitDisabled, amount, toChain, toAddress])
   const selectedAssetFormat = useMemo(() => {
-    return selectedAsset === "muUSD" ? selectedAsset : selectedAsset.toLocaleUpperCase();
+    return selectedAsset === "muUSD"
+      ? selectedAsset
+      : selectedAsset.toLocaleUpperCase();
   }, [selectedAsset]);
-
 
   const buttonText = useMemo(() => {
     if (!account.address) {
       return "Transfer";
     } else if (fromChain && account.chainId !== fromChain) {
       return "Switch network";
-    } else if (addressError) {
-      return "Invalid address";
     } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
       return "Approve";
-    } else if (amountError || !amount) {
-      return "Enter amount";
-    } else if (!overPoolSize) {
-      return "Insufficient pool size";
+    } else if (loading) {
+      return "Pending...";
     }
     return "Transfer";
   }, [
-    amountError,
     amount,
     allowance,
     account.address,
     account.chainId,
     fromChain,
-    overBalance,
-    overPoolSize,
-    addressError,
+    loading,
   ]);
+
+  const baseFee = useMemo(() => {
+    return fromChain.toString() ===
+      import.meta.env.VITE_APP_ETH_CHAINID.toString()
+      ? "0.5"
+      : "0.1";
+  }, [fromChain]);
+
+  const liquidityFees = useMemo(() => {
+    return new BigNumber(selectedAssetFormat === "muUSD" ? 0 : 0.0003)
+      .times(amount || 0)
+      .decimalPlaces(4, 1)
+      .toString();
+  }, [amount, selectedAssetFormat]);
+
   return (
     <div className="max-md:w-[90vw]">
       {/* Main Content */}
@@ -351,12 +349,17 @@ const Bridge: React.FC = () => {
                 setAmountError("");
               }}
               onChange={(e) => {
+                e = e.replace(/^\D*(\d*(?:\.\d{0,10})?).*$/g, "$1");
                 setAmount(e);
                 if (new BigNumber(e).lt(" 0.000001")) {
                   setAmountError("Minimum amount is 0.000001");
                 } else if (new BigNumber(e).gt("1000")) {
                   setAmountError(
                     "Cross-chain amount exceeds the limit (max value 1000u)"
+                  );
+                } else if (new BigNumber(e).lt(new BigNumber(baseFee).plus(liquidityFees))) {
+                  setAmountError(
+                    "Amount must be greater than total fees"
                   );
                 } else {
                   setAmountError("");
@@ -416,20 +419,16 @@ const Bridge: React.FC = () => {
                 <p>
                   The Base Fee:{" "}
                   {selectedAssetFormat
-                    ? `～${fromChain.toString() === import.meta.env.VITE_APP_ETH_CHAINID.toString()
-                      ? "0.5"
-                      : "0.1"
-                    } ${selectedAssetFormat}`
+                    ? `～${baseFee} ${selectedAssetFormat}`
                     : "--"}
                 </p>
                 <p className="mb-4">
                   The Liquidity Fees:{" "}
-                  {(!selectedAssetFormat || selectedAssetFormat === 'muUSD') ? (
+                  {!selectedAssetFormat || selectedAssetFormat === "muUSD" ? (
                     <span className="text-green-400">For Free!</span>
                   ) : (
                     <span>
-                      {new BigNumber(0.0003).times(amount || 0).decimalPlaces(4, 1).toString()}{" "}
-                      {selectedAssetFormat}
+                      {liquidityFees} {selectedAssetFormat}
                     </span>
                   )}
                 </p>
@@ -443,28 +442,26 @@ const Bridge: React.FC = () => {
             <span>
               {selectedAssetFormat
                 ? `～${fromChain
-                  ? new BigNumber(
-                    fromChain.toString() === import.meta.env.VITE_APP_ETH_CHAINID.toString()
-                      ? "0.5"
-                      : "0.1"
-                  )
-                    .plus(new BigNumber(selectedAssetFormat === 'muUSD' ? 0 : 0.0003).times(amount || 0))
-                    .decimalPlaces(4, 1).toString()
+                  ? new BigNumber(baseFee)
+                    .plus(liquidityFees)
+                    .decimalPlaces(4, 1)
+                    .toString()
                   : "0"
                 } ${selectedAssetFormat}`
                 : "--"}
             </span>
           </div>
 
-          {/* <div className="flex items-center h-[18px] mb-3 justify-between">
-            <span>Balance</span>
-            <span>{tokenBalance ? new BigNumber(ethers.formatUnits((tokenBalance.toString() || 0), 6) || 0).toString() : '--'}</span>
-          </div> */}
-          {/* <div className="flex items-center mb-3 h-[18px] justify-between">
-            <span>Pool size</span>
-            <span>{selectedAsset === "musd" ? 'Infinity' : (poolSize ? ethers.formatUnits((poolSize.toString() || 0), 6).toString() : '--')}</span>
-          </div> */}
+
           <div className="flex items-center mb-3 h-[18px] justify-between">
+            <span>Max available amount</span>
+            <span>{selectedAsset === "musd" ? 'Infinity' : (poolSize ? ethers.formatUnits((poolSize.toString() || 0), 6).toString() : '--')}</span>
+          </div>
+          <div className="flex items-center h-[18px] mb-3 justify-between">
+            <span>You will receive</span>
+            <span>{selectedAssetFormat ? `${new BigNumber(amount).minus(baseFee).minus(liquidityFees).toFixed(4, 1)} ${selectedAssetFormat}` : '--'}</span>
+          </div>
+          {/* <div className="flex items-center mb-3 h-[18px] justify-between">
             <span>Remaining approved amount</span>
             <span>
               {allowance
@@ -475,7 +472,7 @@ const Bridge: React.FC = () => {
                   : ethers.formatEther(allowance?.toString() || 0)
                 : "--"}
             </span>
-          </div>
+          </div> */}
           <div className="flex items-center h-[18px] justify-between">
             <span>Estimated time of arrival</span>
             <span>1-5&nbsp;Mins</span>
@@ -488,41 +485,25 @@ const Bridge: React.FC = () => {
           background: "linear-gradient(90deg, #08C8B5 0%, #9A20DD 100%)",
         }}
         onClick={async () => {
-          // const iface = new Interface(bridgeAbi);
-          // const depositData = iface.encodeFunctionData("mappingMUSD", [
-          //   "usdc",
-          //   Number(import.meta.env.VITE_APP_ETH_CHAINID),
-          //   "0x3edbe49932b45b28a1887558ada7c80c7a2624b6",
-          //   ethers.parseUnits("100", 6),
-          // ]);
-          // const tx = {
-          //   to: currentContact as `0x${string}`,
-          //   data: depositData as `0x${string}`,
-          //   value: BigInt(0),
-          // };
-          // const txHash = await sendTransactionAsync(tx);
-          // await waitForTransactionReceipt(config, {
-          //   chainId: Number(import.meta.env.VITE_APP_ETH_CHAINID),
-          //   hash: txHash,
-          // });
           if (!submitDisabled) {
             if (buttonText === "Switch network") {
               switchChain({
-                chainId: fromChain
+                chainId: fromChain,
               });
             } else {
               submit();
             }
           } else if (buttonText === "Switch network") {
             switchChain({
-              chainId: fromChain
+              chainId: fromChain,
             });
           }
         }}
         className={clsx(
           "container !mt-[20px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
           {
-            "cursor-not-allowed opacity-40": (submitDisabled || loading) && buttonText !== "Switch network",
+            "cursor-not-allowed opacity-40":
+              (submitDisabled),
           }
         )}
       >
