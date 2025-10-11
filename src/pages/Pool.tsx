@@ -1,19 +1,18 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import Select from "../components/Select";
 import Input from "../components/Input";
 import USDCIcon from "@/assets/images/USDC.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
-import { ethers, formatEther, Interface, MaxUint256 } from "ethers";
+import { ethers, Interface, MaxUint256 } from "ethers";
 import {
   useAccount,
   useBalance,
-  useFeeData,
   useReadContract,
   useSendTransaction,
   useSwitchChain,
 } from "wagmi";
-import { estimateGas, waitForTransactionReceipt } from "@wagmi/core";
+import { waitForTransactionReceipt } from "@wagmi/core";
 import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
 import clsx from "clsx";
@@ -39,12 +38,10 @@ const Pool: React.FC = () => {
   const [type, setType] = useState<"Add" | "Remove">("Add");
   const [fromChain, setFromChain] = useState(0);
   const account = useAccount();
-  const [gasFee, setGasFee] = useState("--");
   const [selectedAsset, setSelectedAsset] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
-  const { data: feeData } = useFeeData();
   const { switchChain } = useSwitchChain();
 
   // 使用自定义hook获取assetAddress和currentContact
@@ -82,14 +79,6 @@ const Pool: React.FC = () => {
     chainId: fromChain,
   });
   const submit = async () => {
-    if (
-      new BigNumber(formatEther(balanceData?.value || "0")).lt(
-        gasFee === "--" ? 0.00001 : new BigNumber(gasFee).times(1.5)
-      )
-    ) {
-      toast.error("Insufficient gas");
-      return;
-    }
     setLoading(true);
     try {
       if (allowance && new BigNumber(allowance.toString()).gt(amount)) {
@@ -147,40 +136,8 @@ const Pool: React.FC = () => {
   };
 
   const submitDisabled = useMemo(() => {
-    return !(fromChain && new BigNumber(amount).gt(0) && selectedAsset);
-  }, [amount, fromChain, selectedAsset]);
-
-  useEffect(() => {
-    if (!submitDisabled) {
-      const iface = new Interface(bridgeAbi);
-      const depositData = iface.encodeFunctionData(
-        type === "Add" ? "addLiquity" : "delLiquity",
-        [selectedAsset, ethers.parseUnits(amount, 6)]
-      );
-      try {
-        estimateGas(config, {
-          account: account.address,
-          to: currentContact as `0x${string}`,
-          data: depositData as `0x${string}`,
-          chainId: fromChain as any,
-        }).then((gasEstimateRes) => {
-          setGasFee(
-            ethers
-              .formatEther(
-                new BigNumber(gasEstimateRes)
-                  .times(feeData?.maxFeePerGas || 0)
-                  .toString()
-              )
-              .toString()
-          );
-        });
-      } catch (error) {
-        setGasFee("--");
-      }
-    } else {
-      setGasFee("--");
-    }
-  }, [selectedAsset, submitDisabled, amount]);
+    return !(fromChain && selectedAsset);
+  }, [fromChain, selectedAsset]);
 
   const formatTokenBalance = useMemo(() => {
     return ethers.formatUnits(tokenBalance?.toString() || 0, 6);
@@ -189,6 +146,27 @@ const Pool: React.FC = () => {
   const liquidity = useMemo(() => {
     return ethers.formatUnits(currentLiquity?.toString() || 0, 6);
   }, [currentLiquity]);
+
+  const buttonText = useMemo(() => {
+    if (!account.address) {
+      return `${type} Liq`;
+    } else if (fromChain && account.chainId !== fromChain) {
+      return "Switch network";
+    } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
+      return "Approve";
+    } else if (loading) {
+      return "Pending...";
+    }
+    return `${type} Liq`;
+  }, [
+    type,
+    loading,
+    account.address,
+    fromChain,
+    account.chainId,
+    allowance,
+    amount
+  ]);
 
   return (
     <div className="max-md:w-[90vw]">
@@ -378,11 +356,7 @@ const Pool: React.FC = () => {
         )}
       >
         {loading && <Loading></Loading>}
-        {fromChain && account.chainId !== fromChain ? (
-          "Switch network"
-        ) : (
-          <>{type} liquidity</>
-        )}
+        {buttonText}
       </div>
     </div>
   );

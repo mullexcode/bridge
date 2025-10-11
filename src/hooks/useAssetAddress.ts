@@ -20,6 +20,8 @@ export const useAssetAddress = ({ fromChain, selectedAsset }: UseAssetAddressPro
       ? CONTACT_ADDRESS[Number(import.meta.env.VITE_APP_METIS_CHAINID)]
       : fromChain === Number(import.meta.env.VITE_APP_ETH_CHAINID)
         ? CONTACT_ADDRESS[Number(import.meta.env.VITE_APP_ETH_CHAINID)]
+        : fromChain === Number(import.meta.env.VITE_APP_GOAT_CHAINID)
+        ? CONTACT_ADDRESS[Number(import.meta.env.VITE_APP_GOAT_CHAINID)]
         : CONTACT_ADDRESS[Number(import.meta.env.VITE_APP_LINEA_CHAINID)];
   }, [fromChain]);
 
@@ -31,6 +33,8 @@ export const useAssetAddress = ({ fromChain, selectedAsset }: UseAssetAddressPro
         ? Number(import.meta.env.VITE_APP_METIS_CHAINID)
         : fromChain === Number(import.meta.env.VITE_APP_ETH_CHAINID)
           ? Number(import.meta.env.VITE_APP_ETH_CHAINID)
+          : fromChain === Number(import.meta.env.VITE_APP_GOAT_CHAINID)
+          ? Number(import.meta.env.VITE_APP_GOAT_CHAINID)
           : Number(import.meta.env.VITE_APP_LINEA_CHAINID);
     const assetKey = selectedAsset as AssetType;
     return TOKENS[targetChainId]?.[assetKey] as `0x${string}` | undefined;

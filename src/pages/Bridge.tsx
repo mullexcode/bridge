@@ -124,6 +124,7 @@ const Bridge: React.FC = () => {
     args: [account.address],
     chainId: fromChain,
   });
+
   // 获取当前链的原生代币余额
   // const { data: balanceData } = useBalance({
   //   address: account.address,
@@ -136,7 +137,6 @@ const Bridge: React.FC = () => {
     args: [toCurrentContact],
     chainId: toChain,
   });
-
   const { data: allowance } = useReadContract({
     address: assetAddress,
     abi: Erc20Abi,
@@ -144,6 +144,7 @@ const Bridge: React.FC = () => {
     args: [account.address, currentContact],
     chainId: fromChain,
   });
+
   const submit = async () => {
     setLoading(true);
     try {
@@ -211,12 +212,7 @@ const Bridge: React.FC = () => {
       !amountError &&
       new BigNumber(amount).gt(0)
     );
-  }, [
-    loading,
-    amount,
-    amountError,
-    toAddress,
-  ]);
+  }, [loading, amount, amountError, toAddress]);
 
   // useEffect(() => {
   //   if (!submitDisabled && isAddress(toAddress)) {
@@ -261,14 +257,7 @@ const Bridge: React.FC = () => {
       return "Pending...";
     }
     return "Transfer";
-  }, [
-    amount,
-    allowance,
-    account.address,
-    account.chainId,
-    fromChain,
-    loading,
-  ]);
+  }, [amount, allowance, account.address, account.chainId, fromChain, loading]);
 
   const baseFee = useMemo(() => {
     return fromChain.toString() ===
@@ -283,6 +272,14 @@ const Bridge: React.FC = () => {
       .decimalPlaces(4, 1)
       .toString();
   }, [amount, selectedAssetFormat]);
+
+  const { overPoolSize } = useMemo(() => {
+    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
+    return {
+      overPoolSize:
+        new BigNumber(amount).gt(_poolSize) && selectedAsset !== "muUSD",
+    };
+  }, [tokenBalance, poolSize, amount]);
 
   return (
     <div className="max-md:w-[90vw]">
@@ -326,8 +323,8 @@ const Bridge: React.FC = () => {
                 Balance:{" "}
                 {tokenBalance
                   ? new BigNumber(
-                    ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
-                  ).toString()
+                      ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
+                    ).toString()
                   : "--"}
               </div>
             </div>
@@ -357,10 +354,12 @@ const Bridge: React.FC = () => {
                   setAmountError(
                     "Cross-chain amount exceeds the limit (max value 1000u)"
                   );
-                } else if (new BigNumber(e).lt(new BigNumber(baseFee).plus(liquidityFees))) {
-                  setAmountError(
-                    "Amount must be greater than total fees"
-                  );
+                } else if (
+                  new BigNumber(e).lt(
+                    new BigNumber(baseFee).plus(liquidityFees)
+                  )
+                ) {
+                  setAmountError("Amount must be greater than total fees");
                 } else {
                   setAmountError("");
                 }
@@ -406,7 +405,7 @@ const Bridge: React.FC = () => {
           </div>
         </div>
         <div className="p-[16px] text-[14px] text-[#FFFFFF]">
-          <div className="flex items-center h-[18px] mb-3  justify-between">
+          <div className="flex items-center h-[18px] mb-3 justify-between">
             <div
               data-tooltip-id="my-tooltip"
               className="flex items-center gap-[8px]"
@@ -441,25 +440,42 @@ const Bridge: React.FC = () => {
             </Tooltip>
             <span>
               {selectedAssetFormat
-                ? `～${fromChain
-                  ? new BigNumber(baseFee)
-                    .plus(liquidityFees)
-                    .decimalPlaces(4, 1)
-                    .toString()
-                  : "0"
-                } ${selectedAssetFormat}`
+                ? `～${
+                    fromChain
+                      ? new BigNumber(baseFee)
+                          .plus(liquidityFees)
+                          .decimalPlaces(4, 1)
+                          .toString()
+                      : "0"
+                  } ${selectedAssetFormat}`
                 : "--"}
             </span>
           </div>
 
-
-          <div className="flex items-center mb-3 h-[18px] justify-between">
+          <div
+            className={clsx("flex items-center mb-3 h-[18px] justify-between", {
+              "text-red-500": overPoolSize,
+            })}
+          >
             <span>Max available amount</span>
-            <span>{selectedAsset === "musd" ? 'Infinity' : (poolSize ? ethers.formatUnits((poolSize.toString() || 0), 6).toString() : '--')}</span>
+            <span>
+              {selectedAsset === "musd"
+                ? "Infinity"
+                : poolSize
+                ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
+                : "--"}
+            </span>
           </div>
           <div className="flex items-center h-[18px] mb-3 justify-between">
             <span>You will receive</span>
-            <span>{selectedAssetFormat ? `${new BigNumber(amount).minus(baseFee).minus(liquidityFees).toFixed(4, 1)} ${selectedAssetFormat}` : '--'}</span>
+            <span>
+              {selectedAssetFormat
+                ? `${new BigNumber(amount)
+                    .minus(baseFee)
+                    .minus(liquidityFees)
+                    .toFixed(4, 1)} ${selectedAssetFormat}`
+                : "--"}
+            </span>
           </div>
           {/* <div className="flex items-center mb-3 h-[18px] justify-between">
             <span>Remaining approved amount</span>
@@ -500,10 +516,9 @@ const Bridge: React.FC = () => {
           }
         }}
         className={clsx(
-          "container !mt-[20px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
+          "container !mt-[20px] h-[48px] gap-[24px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
           {
-            "cursor-not-allowed opacity-40":
-              (submitDisabled),
+            "cursor-not-allowed opacity-40": submitDisabled,
           }
         )}
       >

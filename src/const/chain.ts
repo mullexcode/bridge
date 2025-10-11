@@ -1,7 +1,7 @@
 import ETHIcon from "@/assets/images/ETH.png";
 import MetisIcon from "@/assets/images/metis.png";
 import LineaIcon from "@/assets/images/linea.png";
-import GoatIcon from "@/assets/images/goat.jpg";
+import GoatIcon from "@/assets/images/goat.png";
 
 export const CHAINS = [
   {

@@ -176,7 +176,7 @@ const MuUSD: React.FC = () => {
 
   const buttonText = useMemo(() => {
     if (!account.address) {
-      return "Transfer";
+      return type;
     } else if (fromChain && account.chainId !== fromChain) {
       return "Switch network";
     } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
@@ -184,8 +184,9 @@ const MuUSD: React.FC = () => {
     } else if (loading) {
       return "Pending...";
     }
-    return "Transfer";
+    return type;
   }, [
+    type,
     amount,
     allowance,
     account.address,
@@ -423,7 +424,7 @@ const MuUSD: React.FC = () => {
           }
         }}
         className={clsx(
-          "container !mt-[20px] gap-[8px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
+          "container !mt-[20px] gap-[24px] h-[48px] md:h-[70px] rounded-[14px] flex items-center justify-center text-[#FFFFFF] text-[20px] font-semibold cursor-pointer mx-auto",
           {
             "cursor-not-allowed opacity-40":
               (submitDisabled || loading) && buttonText !== "Switch network",
