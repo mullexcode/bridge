@@ -4,8 +4,10 @@ import LogoWhiteIcon from "@/assets/images/home/logo-white.png";
 import BannerBg from "@/assets/images/home/banner-bg.png";
 import BannerH5Bg from "@/assets/images/home/banner-bg-h5.png";
 import LogoIcon from "@/assets/images/home/logo.png";
+import { useNavigate } from 'react-router-dom';
 // import { toast } from 'react-toastify';
 const Section1 = () => {
+  const navigate = useNavigate()
   const videoRef = useRef<HTMLVideoElement>(null);
   // 处理视频加载和自动播放，特别是针对iOS设备
   useEffect(() => {
@@ -71,7 +73,7 @@ const Section1 = () => {
           <img alt='' src={LogoWhiteIcon} className='w-[78px] md:w-[117px] h-auto'></img>
           <div className='flex items-center gap-[20px]'>
             {/* <div onClick={addRpc} className='text-[12px] md:text-[14px] rounded-[3px] md:rounded-[7px] leading-[9px] bg-black/80 md:bg-[#2A2B2B] md:hover:bg-[#000000] px-[10px] md:px-[21px] py-[10.5px] cursor-pointer'>Add RPC</div> */}
-            <div onClick={() => window.open("https://bridge.mullex.io")} className='text-[12px] md:text-[14px] rounded-[3px] md:rounded-[7px] leading-[9px] bg-black/80 md:bg-[#2A2B2B] md:hover:bg-[#000000] px-[10px] md:px-[21px] py-[10.5px] cursor-pointer'>Start Bridge</div>
+            <div onClick={() => navigate("/bridge")} className='text-[12px] md:text-[14px] rounded-[3px] md:rounded-[7px] leading-[9px] bg-black/80 md:bg-[#2A2B2B] md:hover:bg-[#000000] px-[10px] md:px-[21px] py-[10.5px] cursor-pointer'>Start Bridge</div>
           </div>
         </div>
         <img alt='' src={LogoIcon} className='w-[76px] md:w-[184px] mt-[30px] md:mt-[130px] mx-auto h-auto'></img>
@@ -93,7 +95,7 @@ const Section1 = () => {
           </div>
           <div
             className='max-md:w-[246px] text-center justify-center bg-gradient-to-t font-[lack] flex items-center from-[#9A1FDE] to-[#04C9B7] rounded-[6px] md:rounded-[12px] h-[40px] md:h-[52px] px-[38.5px] text-[15px] md:text-[19.5px] leading-[14px] cursor-pointer hover:from-[#4F74CA] hover:to-[#4F74CA] transition-opacity'
-            onClick={() => window.open("https://bridge.mullex.io")}
+            onClick={() => navigate("/bridge")}
           >
             Start Bridge
           </div>

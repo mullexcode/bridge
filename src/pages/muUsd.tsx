@@ -132,6 +132,22 @@ const MuUSD: React.FC = () => {
         chainId: fromChain as any,
         hash: txHash,
       });
+      fetch(`${import.meta.env.VITE_APP_API_HOST}/commit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "chainId": fromChain.toString(),
+          "tochainId": toChain.toString(),
+          "token": assetAddress,
+          "address": account.address,
+          "hash": txHash,
+          "page": "muusd",
+          "toToken": USDCAddress,
+          "kind": type === "Deposit" ? "0" : "1",
+        }),
+      })
       setLoading(false);
       setAmount("");
       setFromChain(0);
@@ -150,29 +166,18 @@ const MuUSD: React.FC = () => {
     return fromChain !== 0 && toChain === fromChain;
   }, [fromChain, toChain]);
 
-  // const { overBalance, overPoolSize } = useMemo(() => {
-  //   const _tokenBalance = ethers.formatUnits(tokenBalance?.toString() || 0, 6);
-  //   const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
-  //   return {
-  //     overBalance: new BigNumber(amount).lte(_tokenBalance),
-  //     overPoolSize: new BigNumber(amount).lte(_poolSize) || type === "Deposit",
-  //   };
-  // }, [tokenBalance, amount, type, poolSize]);
+  const { overPoolSize } = useMemo(() => {
+    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
+    return {
+      overPoolSize: new BigNumber(amount).lte(_poolSize) || type === "Deposit",
+    };
+  }, [amount, type, poolSize]);
 
-  const submitDisabled = useMemo(() => {
-    return !(
-      !loading &&
-      isAddress(toAddress) &&
-      !amountError &&
-      new BigNumber(amount).gt(0)
-    );
-  }, [
-    loading,
-    amount,
-    amountError,
-    toAddress,
-  ]);
-
+  const selectedAssetFormat = useMemo(() => {
+    return selectedAsset === "muUSD"
+      ? selectedAsset
+      : selectedAsset.toLocaleUpperCase();
+  }, [selectedAsset]);
 
   const buttonText = useMemo(() => {
     if (!account.address) {
@@ -206,6 +211,25 @@ const MuUSD: React.FC = () => {
   const liquidityFees = useMemo(() => {
     return new BigNumber(0.0003).times(amount || 0).toString();
   }, [amount]);
+
+  const submitDisabled = useMemo(() => {
+    return !(
+      !loading &&
+      isAddress(toAddress) &&
+      !amountError &&
+      new BigNumber(amount).gt(0) &&
+      new BigNumber(amount).minus(baseFee).minus(liquidityFees).gt(0) &&
+      overPoolSize
+    );
+  }, [
+    loading,
+    amount,
+    amountError,
+    toAddress,
+    baseFee,
+    liquidityFees,
+    overPoolSize
+  ]);
 
   return (
     <div className="max-md:w-[90vw]">
@@ -276,10 +300,17 @@ const MuUSD: React.FC = () => {
                   setAmountError(
                     "Amount must be greater than total fees"
                   );
+                } else {
+                  setAmountError("")
                 }
                 setAmount(e);
               }}
             ></Input>
+            {amountError && (
+              <div className="text-red-500 text-left text-base mt-2">
+                {amountError}
+              </div>
+            )}
             <img
               alt=""
               src={ArrowIcon}
@@ -325,7 +356,11 @@ const MuUSD: React.FC = () => {
           </div>
         </div>
         <div className="p-[16px] text-[14px]font-medium text-[#FFFFFF]">
-          <div className="flex items-center h-[18px] mb-3  justify-between">
+          <div className={clsx("flex items-center h-[18px] mb-3  justify-between", {
+            "text-red-500": new BigNumber(amount)
+              .minus(baseFee)
+              .minus(liquidityFees).lt(0),
+          })}>
             <div
               data-tooltip-id="my-tooltip"
               className="flex items-center gap-[8px]"
@@ -377,7 +412,7 @@ const MuUSD: React.FC = () => {
                   : "--"}
             </span>
           </div>
-          <div className="flex items-center mb-3 h-[18px] justify-between">
+          {/* <div className="flex items-center mb-3 h-[18px] justify-between">
             <span>Remaining approved amount</span>
             <span>
               {allowance
@@ -386,6 +421,35 @@ const MuUSD: React.FC = () => {
                 ).gt(10000000000)
                   ? "MAX"
                   : ethers.formatEther(allowance?.toString() || 0)
+                : "--"}
+            </span>
+          </div> */}
+          {
+            type !== "Deposit" && <div
+              className={clsx("flex items-center mb-3 h-[18px] justify-between", {
+                "text-red-500": !overPoolSize && amount,
+              })}
+            >
+              <span>Max available amount</span>
+              <span>
+                {selectedAsset !== "usdc"
+                  ? "Infinity"
+                  : poolSize
+                    ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
+                    : "--"}
+              </span>
+            </div>
+          }
+          <div className="flex items-center h-[18px] mb-3 justify-between">
+            <span>You will receive</span>
+            <span>
+              {selectedAssetFormat && new BigNumber(amount || 0)
+                .minus(baseFee || 0)
+                .minus(liquidityFees || 0).gt(0)
+                ? `${new BigNumber(amount)
+                  .minus(baseFee)
+                  .minus(liquidityFees)
+                  .toFixed(4, 1)} ${selectedAssetFormat}`
                 : "--"}
             </span>
           </div>

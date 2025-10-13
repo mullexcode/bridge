@@ -195,6 +195,20 @@ const Bridge: React.FC = () => {
         chainId: fromChain as any,
         hash: txHash,
       });
+      fetch(`${import.meta.env.VITE_APP_API_HOST}/commit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "chainId": fromChain.toString(),
+          "tochainId": toChain.toString(),
+          "token": assetAddress,
+          "address": account.address,
+          "hash": txHash,
+          "page": "bridge"
+        }),
+      })
       setAmount("");
       setSelectedAsset("");
       setToChain(0);
@@ -205,14 +219,6 @@ const Bridge: React.FC = () => {
     }
   };
 
-  const submitDisabled = useMemo(() => {
-    return !(
-      !loading &&
-      isAddress(toAddress) &&
-      !amountError &&
-      new BigNumber(amount).gt(0)
-    );
-  }, [loading, amount, amountError, toAddress]);
 
   // useEffect(() => {
   //   if (!submitDisabled && isAddress(toAddress)) {
@@ -281,6 +287,16 @@ const Bridge: React.FC = () => {
     };
   }, [tokenBalance, poolSize, amount]);
 
+  const submitDisabled = useMemo(() => {
+    return !(
+      !loading &&
+      isAddress(toAddress) &&
+      !amountError &&
+      new BigNumber(amount).gt(0) &&
+      !overPoolSize
+    );
+  }, [loading, amount, amountError, toAddress, overPoolSize]);
+
   return (
     <div className="max-md:w-[90vw]">
       {/* Main Content */}
@@ -323,8 +339,8 @@ const Bridge: React.FC = () => {
                 Balance:{" "}
                 {tokenBalance
                   ? new BigNumber(
-                      ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
-                    ).toString()
+                    ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
+                  ).toString()
                   : "--"}
               </div>
             </div>
@@ -342,6 +358,12 @@ const Bridge: React.FC = () => {
                     "Cross-chain amount exceeds the limit (max value 1000u)"
                   );
                   return;
+                }
+                if (new BigNumber(e).lt(
+                  new BigNumber(baseFee).plus(liquidityFees)
+                )) {
+                  setAmountError("Amount must be greater than total fees");
+                  return
                 }
                 setAmountError("");
               }}
@@ -405,7 +427,11 @@ const Bridge: React.FC = () => {
           </div>
         </div>
         <div className="p-[16px] text-[14px] text-[#FFFFFF]">
-          <div className="flex items-center h-[18px] mb-3 justify-between">
+          <div className={clsx("flex items-center h-[18px] mb-3 justify-between", {
+            "text-red-500": new BigNumber(amount)
+              .minus(baseFee)
+              .minus(liquidityFees).lt(0),
+          })}>
             <div
               data-tooltip-id="my-tooltip"
               className="flex items-center gap-[8px]"
@@ -440,14 +466,13 @@ const Bridge: React.FC = () => {
             </Tooltip>
             <span>
               {selectedAssetFormat
-                ? `～${
-                    fromChain
-                      ? new BigNumber(baseFee)
-                          .plus(liquidityFees)
-                          .decimalPlaces(4, 1)
-                          .toString()
-                      : "0"
-                  } ${selectedAssetFormat}`
+                ? `～${fromChain
+                  ? new BigNumber(baseFee)
+                    .plus(liquidityFees)
+                    .decimalPlaces(4, 1)
+                    .toString()
+                  : "0"
+                } ${selectedAssetFormat}`
                 : "--"}
             </span>
           </div>
@@ -459,21 +484,23 @@ const Bridge: React.FC = () => {
           >
             <span>Max available amount</span>
             <span>
-              {selectedAsset === "musd"
+              {selectedAsset !== "usdc"
                 ? "Infinity"
                 : poolSize
-                ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
-                : "--"}
+                  ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
+                  : "--"}
             </span>
           </div>
           <div className="flex items-center h-[18px] mb-3 justify-between">
             <span>You will receive</span>
             <span>
-              {selectedAssetFormat
-                ? `${new BigNumber(amount)
-                    .minus(baseFee)
-                    .minus(liquidityFees)
-                    .toFixed(4, 1)} ${selectedAssetFormat}`
+              {selectedAssetFormat && new BigNumber(amount || 0)
+                .minus(baseFee || 0)
+                .minus(liquidityFees || 0).gt(0)
+                ? `${new BigNumber(amount || 0)
+                  .minus(baseFee || 0)
+                  .minus(liquidityFees || 0)
+                  .toFixed(4, 1)} ${selectedAssetFormat}`
                 : "--"}
             </span>
           </div>

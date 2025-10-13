@@ -7,7 +7,6 @@ import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, MaxUint256 } from "ethers";
 import {
   useAccount,
-  useBalance,
   useReadContract,
   useSendTransaction,
   useSwitchChain,
@@ -66,11 +65,6 @@ const Pool: React.FC = () => {
     chainId: fromChain,
   });
 
-  // 获取当前链的原生代币余额
-  const { data: balanceData } = useBalance({
-    address: account.address,
-  });
-
   const { data: allowance } = useReadContract({
     address: assetAddress,
     abi: Erc20Abi,
@@ -126,6 +120,20 @@ const Pool: React.FC = () => {
         chainId: fromChain as any,
         hash: txHash,
       });
+      fetch(`${import.meta.env.VITE_APP_API_HOST}/commit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          "chainId": fromChain.toString(),
+          "token": assetAddress,
+          "address": account.address,
+          "hash": txHash,
+          "page": "pool",
+          "kind": type === "Add" ? "0" : "1",
+        }),
+      })
       setLoading(false);
       setAmount("");
       setSelectedAsset("");
@@ -149,7 +157,7 @@ const Pool: React.FC = () => {
 
   const buttonText = useMemo(() => {
     if (!account.address) {
-      return `${type} Liq`;
+      return `${type} Liquidity`;
     } else if (fromChain && account.chainId !== fromChain) {
       return "Switch network";
     } else if (new BigNumber(allowance?.toString() || 0).lte(amount)) {
@@ -157,7 +165,7 @@ const Pool: React.FC = () => {
     } else if (loading) {
       return "Pending...";
     }
-    return `${type} Liq`;
+    return `${type} Liquidity`;
   }, [
     type,
     loading,

@@ -9,6 +9,7 @@ import { useAccount, useChainId, useConnect, useDisconnect } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { desensitization } from "../utils";
 import { useEffect, useState } from "react";
+import { toast } from "react-toastify";
 const STORAGE_KEY = 'manual-wallet-connection';
 
 export default function Header() {
@@ -19,7 +20,7 @@ export default function Header() {
     const { disconnect } = useDisconnect();
     const chainId = useChainId();
     const [isReconnecting, setIsReconnecting] = useState(false);
-    
+
     useEffect(() => {
         if (isConnected && address && connector && chainId) {
             const connectionInfo: any = {
@@ -79,7 +80,7 @@ export default function Header() {
         <header className="w-full md:max-w-[1280px] md:mx-auto fixed px-4 py-3 top-0 z-10">
             <div className="mx-auto flex justify-between items-center">
                 <div className="flex items-center space-x-4 md:space-x-8">
-                    <div className="flex items-center gap-[12px]">
+                    <div onClick={() => navigate("/")} className="flex cursor-pointer items-center gap-[12px]">
                         <img alt="" src={logo} className="w-[32px] md:w-[50px] h-auto"></img>
                         <div className="text-[16px] md:text-[20px] text-[#2C2C3F] font-extrabold">Mullex</div>
                     </div>
@@ -120,7 +121,7 @@ export default function Header() {
                                         <MenuItem>
                                             <div onClick={() => {
                                                 navigate("/muUSD");
-                                            }} className="bg-[#F2F3F8] rounded-[8px] w-[150px] mb-[10px] h-[36px] flex items-center pl-[10px]">
+                                            }} className="bg-[#F2F3F8] rounded-[8px] w-[150px] h-[36px] flex items-center pl-[10px]">
                                                 muUSD
                                             </div>
                                         </MenuItem>
@@ -171,19 +172,49 @@ export default function Header() {
                 </div>
                 <div className="flex items-center space-x-4">
                     {address && isConnected ? (
-                        <div
-                            onClick={() => {
-                                handleDisconnect();
-                            }}
-                            style={{
-                                background:
-                                    "linear-gradient(127.14deg, #08C8B5 13.02%, #9A20DD 104.31%)",
-                            }}
-                            className="flex rounded-[14px] h-[32px] md:h-[48px] items-center gap-[10px] justify-center max-md:text-[12px] px-[12px] md:px-[20px] cursor-pointer text-white font-semibold"
-                        >
-                            {desensitization(address)}
-                            <img alt="" src={DisconnectIcon}></img>
-                        </div>
+                        <Menu>
+                            {({ close }) => (
+                                <>
+                                    <MenuButton
+                                        style={{
+                                            background:
+                                                "linear-gradient(127.14deg, #08C8B5 13.02%, #9A20DD 104.31%)",
+                                        }}
+                                        className="flex rounded-[14px] h-[32px] md:h-[48px] items-center gap-[10px] justify-center max-md:text-[12px] px-[12px] md:px-[20px] cursor-pointer text-white font-semibold"
+
+                                    >
+                                        {desensitization(address)}
+                                        <img alt="" src={DisconnectIcon}></img>
+                                    </MenuButton>
+                                    <MenuItems
+                                        anchor="bottom"
+                                        className="p-[10px] cursor-pointer outline-none border-none text-[12px] font-medium rounded-[10px] bg-white shadow-[0px_1px_4px_0px_#1A1D251F]"
+                                    >
+                                        <MenuItem>
+                                            <div
+                                                onClick={async () => {
+                                                    await navigator.clipboard.writeText(address);
+                                                    toast.success(" successfully copied address!");
+                                                    close()
+                                                }}
+                                                className="bg-[#F2F3F8] rounded-[8px] w-[150px] mb-[10px] h-[36px] flex items-center pl-[10px]"
+                                            >
+                                                Copy address
+                                            </div>
+                                        </MenuItem>
+                                        <MenuItem>
+                                            <div onClick={() => {
+                                                handleDisconnect();
+                                                close();
+                                            }} className="bg-[#F2F3F8] rounded-[8px] w-[150px] h-[36px] flex items-center pl-[10px]">
+                                                Logout
+                                            </div>
+                                        </MenuItem>
+
+                                    </MenuItems>
+                                </>
+                            )}
+                        </Menu>
                     ) : (
                         <ConnectButton.Custom>
                             {({
