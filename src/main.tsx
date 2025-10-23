@@ -39,7 +39,7 @@ const WagmiConfig = getDefaultConfig({
     [sepolia.id]: http(),
     [metisSepolia.id]: http(),
     [lineaSepolia.id]: http(),
-    [goat.id]: http(),
+    [goat.id]: http("https://rpc.goat.network"),
     [GoatTest.id]: http(),
     [linea.id]: http("https://lb.drpc.org/linea/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
     [metis.id]: http("https://lb.drpc.org/metis/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),

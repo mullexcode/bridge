@@ -206,7 +206,8 @@ const Bridge: React.FC = () => {
           "token": assetAddress,
           "address": account.address,
           "hash": txHash,
-          "page": "bridge"
+          "page": "bridge",
+          "amount": ethers.parseUnits(amount, 6).toString(),
         }),
       })
       setAmount("");
@@ -349,6 +350,7 @@ const Bridge: React.FC = () => {
               placeholder={"Please input amount"}
               value={amount}
               onBlur={(e) => {
+                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
                 if (new BigNumber(e).lt(" 0.000001")) {
                   setAmountError("Minimum amount is 0.000001");
                   return;
@@ -365,9 +367,15 @@ const Bridge: React.FC = () => {
                   setAmountError("Amount must be greater than total fees");
                   return
                 }
+                if (new BigNumber(e).gt(_tokenBalance)) {
+                  setAmountError("Insufficient balance");
+                  return
+                }
+
                 setAmountError("");
               }}
               onChange={(e) => {
+                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
                 e = e.replace(/^\D*(\d*(?:\.\d{0,10})?).*$/g, "$1");
                 setAmount(e);
                 if (new BigNumber(e).lt(" 0.000001")) {
@@ -382,6 +390,8 @@ const Bridge: React.FC = () => {
                   )
                 ) {
                   setAmountError("Amount must be greater than total fees");
+                } else if (new BigNumber(e).gt(_tokenBalance)) {
+                  setAmountError("Insufficient balance");
                 } else {
                   setAmountError("");
                 }

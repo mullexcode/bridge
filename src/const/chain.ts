@@ -30,6 +30,16 @@ export const CHAINS = [
   },
 ];
 
+export const SCANURL = {
+  11155111: "https://sepolia.etherscan.io/",
+  1: "https://etherscan.io/",
+  59902: "https://sepolia-explorer.metisdevops.link/",
+  1088: "https://metisscan.info/",
+  59141: "https://sepolia.lineascan.build/",
+  59144: "https://lineascan.build/",
+  48816: "https://explorer.testnet3.goat.network/",
+  2345: "https://explorer.goat.network/",
+}
 export const TOKENS = {
   [import.meta.env.VITE_APP_ETH_CHAINID]: {
     muUSD: import.meta.env.VITE_APP_ETH_MUSD,

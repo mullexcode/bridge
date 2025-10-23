@@ -132,6 +132,7 @@ const Pool: React.FC = () => {
           "hash": txHash,
           "page": "pool",
           "kind": type === "Add" ? "0" : "1",
+          "amount": ethers.parseUnits(amount, 6).toString(),
         }),
       })
       setLoading(false);
@@ -291,6 +292,7 @@ const Pool: React.FC = () => {
                     setAmount("")
                     return
                   }
+                  e = e.replace(/^\D*(\d*(?:\.\d{0,10})?).*$/g, "$1");
                   if (new BigNumber(e).lte(liquidity || 0)) {
                     setAmount(e);
                   } else {

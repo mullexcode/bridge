@@ -1,3 +1,5 @@
+import { SCANURL } from "../const/chain";
+
 export function desensitization(
   str: string | undefined | null,
   beginLen = 4,
@@ -43,4 +45,9 @@ export function getQueryString(name: string) {
     return decodeURIComponent(r[2]);
   }
   return null;
+}
+
+export const goScan = (chainId: string, hash: string) => {
+  // 先转换为unknown，再转换为正确的索引类型
+  window.open(`${SCANURL[chainId as unknown as keyof typeof SCANURL]}tx/${hash}`, '_blank');
 }

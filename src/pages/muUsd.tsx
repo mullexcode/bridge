@@ -53,7 +53,7 @@ const MuUSD: React.FC = () => {
   const { assetAddress: USDCAddress, currentContact: toCurrentContact } =
     useAssetAddress({
       fromChain: toChain,
-      selectedAsset: "usdc",
+      selectedAsset: type === "Deposit" ? "muUSD" : "usdc",
     });
   useEffect(() => {
     if (account.address) {
@@ -146,6 +146,7 @@ const MuUSD: React.FC = () => {
           "page": "muusd",
           "toToken": USDCAddress,
           "kind": type === "Deposit" ? "0" : "1",
+          "amount": ethers.parseUnits(amount, 6).toString(),
         }),
       })
       setLoading(false);
@@ -202,15 +203,15 @@ const MuUSD: React.FC = () => {
 
 
   const baseFee = useMemo(() => {
-    return fromChain.toString() ===
+    return fromChain === toChain ? '0' :fromChain.toString() ===
       import.meta.env.VITE_APP_ETH_CHAINID.toString()
       ? "0.5"
       : "0.1";
-  }, [fromChain]);
+  }, [fromChain, toChain]);
 
   const liquidityFees = useMemo(() => {
-    return new BigNumber(0.0003).times(amount || 0).toString();
-  }, [amount]);
+    return type === "Deposit" ? BigNumber(fromChain === toChain ? 0 : 0.0003).times(amount || 0).toString() : "0";
+  }, [amount, toChain, fromChain, type]);
 
   const submitDisabled = useMemo(() => {
     return !(
@@ -300,6 +301,8 @@ const MuUSD: React.FC = () => {
                   setAmountError(
                     "Amount must be greater than total fees"
                   );
+                } else if (new BigNumber(e).gt(formatTokenBalance)) {
+                  setAmountError("Insufficient balance");
                 } else {
                   setAmountError("")
                 }
@@ -449,7 +452,7 @@ const MuUSD: React.FC = () => {
                 ? `${new BigNumber(amount)
                   .minus(baseFee)
                   .minus(liquidityFees)
-                  .toFixed(4, 1)} ${selectedAssetFormat}`
+                  .toFixed(4, 1)} ${type === "Deposit" ? "muUSD" : "USDC"}`
                 : "--"}
             </span>
           </div>

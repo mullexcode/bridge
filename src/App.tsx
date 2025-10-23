@@ -5,6 +5,7 @@ import Header from './components/Header';
 import Pool from './pages/Pool';
 import MuUSD from './pages/muUsd';
 import Home from './pages/Home';
+import Transaction from './pages/Transaction';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="/app" element={<Home />} />
             <Route path="/pool" element={<Pool />} />
             <Route path="/muUSD" element={<MuUSD />} />
+            <Route path="/transaction" element={<Transaction />} />
           </Routes>
         </main>
       </div>
