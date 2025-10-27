@@ -22,47 +22,141 @@ import ArrowIcon from "@/assets/images/arrow.png";
 import "react-tooltip/dist/react-tooltip.css";
 import Loading from "../components/Loading";
 import { Tooltip } from "react-tooltip";
-import { CHAINS } from "../const/chain";
-import { useAssetAddress } from "../hooks/useAssetAddress";
-
-const chains = CHAINS;
 
 const MuUSD: React.FC = () => {
-  const [type, setType] = useState<"Deposit" | "Redeem">("Deposit");
-  const [fromChain, setFromChain] = useState(0);
-  const [toChain, setToChain] = useState(0);
-  const account = useAccount();
-  const [toAddress, setToAddress] = useState<string>(
-    account.address?.toString() || ""
-  );
+    const [chains, setChains] = useState<any>();
+    const [tokens, setTokens] = useState<any>();
+    const [usdcChains, setUsdcChains] = useState<string[]>([]);
+    const [muUSDChains, setMuUSDChains] = useState<string[]>([]);
+
+    const [type, setType] = useState<"Deposit" | "Redeem">("Deposit");
+    const [fromChain, setFromChain] = useState(0);
+    const [toChain, setToChain] = useState(0);
+    const account = useAccount();
+    const [toAddress, setToAddress] = useState<string>(
+        account.address?.toString() || ""
+    );
+
   const [amountError, setAmountError] = useState("");
   const { switchChain } = useSwitchChain();
   const [addressError, setAddressError] = useState("");
   const [loading, setLoading] = useState(false);
   const [amount, setAmount] = useState("");
   const { sendTransactionAsync } = useSendTransaction();
-  const selectedAsset = useMemo(() => {
-    return type === "Deposit" ? "usdc" : "muUSD";
-  }, [type]);
-  // 使用自定义hook获取assetAddress和currentContact
-  const { assetAddress, currentContact } = useAssetAddress({
-    fromChain,
-    selectedAsset,
-  });
 
-  const { assetAddress: USDCAddress, currentContact: toCurrentContact } =
-    useAssetAddress({
-      fromChain: toChain,
-      selectedAsset: type === "Deposit" ? "muUSD" : "usdc",
-    });
+  const selectedAsset = useMemo(() => {
+    return type === "Deposit" ? "USDC" : "muUSD";
+  }, [type]);
+    const targetAsset = useMemo(() => {
+        return type === "Deposit" ? "muUSD" : "USDC";
+    }, [type]);
+
+  const fromChainList = useMemo(() => {
+      if (!chains||!type){
+         return [];
+     }
+
+      if (type === "Deposit") {
+          return chains?.filter((item: any) => usdcChains.includes(item.label));
+      }else{
+          return chains?.filter((item: any) => muUSDChains.includes(item.label));
+      }
+  }, [chains,type,usdcChains,muUSDChains]);
+  const toChainList = useMemo(() => {
+      if (!chains||!type){
+          return [];
+      }
+
+      if (type === "Deposit") {
+         return chains?.filter((item: any) => muUSDChains.includes(item.label));
+      }else{
+         return chains?.filter((item: any) => usdcChains.includes(item.label));
+      }
+  }, [chains,type,usdcChains,muUSDChains]);
+
+    const getToken = (tokens: any, selectedAsset: string) => {
+        return useMemo(() => {
+            if (!selectedAsset) {
+                return "";
+            }
+
+            const info = tokens?.[selectedAsset];
+            const contracts = info?.contracts
+
+            return contracts;
+        }, [tokens, selectedAsset]);
+    };
+    const selectedToken = getToken(tokens, selectedAsset)
+    const targetToken = getToken(tokens, targetAsset)
+    const fromTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+
+        return selectedToken[fromChain]
+    }, [selectedToken, fromChain]);
+    const toTokenAddress = useMemo(() => {
+        if (!targetToken) {
+            return "";
+        }
+
+        return targetToken[toChain]
+    }, [targetToken, toChain]);
+
+    const getChainData = (chains: any[], chainId: number) => {
+        return useMemo(() => {
+            if (!chains){
+                return null;
+            }
+            return chains.find((item) => item.id.toString() === chainId.toString());
+        }, [chains, chainId]);
+    };
+    const fromChainData  = getChainData(chains, fromChain);
+    const fromContact = useMemo(() => {
+        return fromChainData?.contract;
+    }, [fromChainData]);
+    const toChainData  = getChainData(chains, toChain);
+    const toContact = useMemo(() => {
+        return toChainData?.contract;
+    }, [toChainData]);
+
+
+    // 使用自定义hook获取assetAddress和currentContact
+  // const { assetAddress, currentContact } = useAssetAddress({
+  //   fromChain,
+  //   selectedAsset,
+  // });
+
+  // const { assetAddress: USDCAddress, currentContact: toCurrentContact } =
+  //   useAssetAddress({
+  //     fromChain: toChain,
+  //     selectedAsset: type === "Deposit" ? "muUSD" : "usdc",
+  //   });
+
+
   useEffect(() => {
+      if (account.address) {
+          fetch(`${import.meta.env.VITE_APP_API_HOST}/getmuusdinfo`, {
+              method: "GET",
+          }).then(async (res) => {
+              const response = await res.json();
+              console.log("response", response)
+              if (response) {
+                  setChains(response.chains)
+                  setTokens(response.tokens)
+                  setUsdcChains(response.USDCChains)
+                  setMuUSDChains(response.muusdChains)
+              }
+          });
+      }
+
     if (account.address) {
       setToAddress(account.address.toString());
     }
   }, [account.address]);
 
   const { data: tokenBalance } = useReadContract({
-    address: assetAddress,
+    address: fromTokenAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
     args: [account.address],
@@ -70,18 +164,18 @@ const MuUSD: React.FC = () => {
   });
 
   const { data: allowance } = useReadContract({
-    address: assetAddress,
+    address: fromTokenAddress,
     abi: Erc20Abi,
     functionName: "allowance",
-    args: [account.address, currentContact],
+    args: [account.address, fromContact],
     chainId: fromChain,
   });
 
   const { data: poolSize } = useReadContract({
-    address: USDCAddress,
+    address: toTokenAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
-    args: [toCurrentContact],
+    args: [toContact],
     chainId: toChain,
   });
 
@@ -93,12 +187,12 @@ const MuUSD: React.FC = () => {
       } else {
         const iface = new Interface(Erc20Abi);
         const approveData = iface.encodeFunctionData("approve", [
-          currentContact,
+            fromContact,
           MaxUint256,
         ]);
-        if (assetAddress && approveData) {
+        if (fromTokenAddress && approveData) {
           const tx = {
-            to: assetAddress as `0x${string}`,
+            to: fromTokenAddress as `0x${string}`,
             data: approveData as `0x${string}`,
             value: BigInt(0),
           };
@@ -123,7 +217,7 @@ const MuUSD: React.FC = () => {
         ["usdc", toChain, toAddress, ethers.parseUnits(amount, 6)]
       );
       const tx = {
-        to: currentContact as `0x${string}`,
+        to: fromContact as `0x${string}`,
         data: depositData as `0x${string}`,
         value: BigInt(0),
       };
@@ -140,11 +234,11 @@ const MuUSD: React.FC = () => {
         body: JSON.stringify({
           "chainId": fromChain.toString(),
           "tochainId": toChain.toString(),
-          "token": assetAddress,
+          "token": selectedAsset,
           "address": account.address,
           "hash": txHash,
           "page": "muusd",
-          "toToken": USDCAddress,
+          "toToken": targetAsset,
           "kind": type === "Deposit" ? "0" : "1",
           "amount": ethers.parseUnits(amount, 6).toString(),
         }),
@@ -269,13 +363,10 @@ const MuUSD: React.FC = () => {
             <Select
               onChange={(value) => {
                 setFromChain(Number(value));
+                setToChain(0);
               }}
               value={fromChain}
-              options={chains.filter(
-                (el) =>
-                  (el.symbol !== "metis" && el.symbol !== "goat") ||
-                  type !== "Deposit"
-              )}
+              options={fromChainList}
               placeholder="Select a chain"
               label={
                 type === "Deposit" ? "Deposit USDC from" : "Burn muUSD from"
@@ -322,11 +413,7 @@ const MuUSD: React.FC = () => {
             <Select
               onChange={(value) => setToChain(Number(value))}
               value={toChain}
-              options={chains.filter(
-                (el) =>
-                  (el.symbol !== "metis" && el.symbol !== "goat") ||
-                  type === "Deposit"
-              )}
+              options={toChainList}
               placeholder="Select a chain"
               label={type === "Deposit" ? "Get muUSD to" : "Get USDC to"}
             ></Select>
@@ -404,7 +491,7 @@ const MuUSD: React.FC = () => {
             <span>
               {isFlag
                 ? `0 ${type === "Deposit" ? "USDC" : "muUSD"}`
-                : assetAddress
+                : fromTokenAddress
                   ? `～${fromChain
                     ? new BigNumber(baseFee)
                       .plus(liquidityFees)
@@ -435,9 +522,8 @@ const MuUSD: React.FC = () => {
             >
               <span>Max available amount</span>
               <span>
-                {selectedAsset !== "usdc"
-                  ? "Infinity"
-                  : poolSize
+                {
+                    poolSize
                     ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
                     : "--"}
               </span>
@@ -504,4 +590,4 @@ const MuUSD: React.FC = () => {
   );
 };
 
-export default MuUSD;
+export { MuUSD };
