@@ -58,7 +58,7 @@ const Section3 = () => {
           </div>
         </div>
         <div className="flex flex-wrap gap-[16px] md:gap-[22px] flex-col md:flex-row mt-[20px] md:mt-[39.5px] text-[14px] md:text-[16px] items-center">
-          <div onClick={() => window.open("https://docs.mullex.io")} className="max-md:w-full justify-center flex items-center border-[1px] border-[#ffffff] rounded-[8px] h-[40px] md:h-[42px] px-[18px] shrink-0 cursor-pointer hover:bg-[#4A4A4A] transition-opacity">
+          <div onClick={() => window.open("https://mullex.gitbook.io/mullex-docs/")} className="max-md:w-full justify-center flex items-center border-[1px] border-[#ffffff] rounded-[8px] h-[40px] md:h-[42px] px-[18px] shrink-0 cursor-pointer hover:bg-[#4A4A4A] transition-opacity">
             Learn More
           </div>
           <div onClick={() => window.open("https://bridge.mullex.io/muUSD")} className="max-md:w-full justify-center bg-gradient-to-t flex items-center from-[#9A1FDE] to-[#04C9B7] rounded-[8px] shrink-0 h-[40px] md:h-[42px] px-[18px] cursor-pointer hover:from-[#4F74CA] hover:to-[#4F74CA] transition-opacity">

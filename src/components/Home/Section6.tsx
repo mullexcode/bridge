@@ -102,13 +102,13 @@ const Section6 = () => {
                                     <div className="text-[11px] md:text-[16px] leading-[14.5px] md:leading-[22px] text-[#BFBFBF]">
                                         {el.desc}
                                     </div>
-                                    <div onClick={() => window.open("https://docs.mullex.io")} className=" font-[lack] max-md:hidden mt-[24px] flex w-fit items-center border-[1px] border-[#ffffff] rounded-[12px] h-[40px] px-[29.5px] text-[16px] leading-[14px] cursor-pointer hover:bg-[#4A4A4A] transition-bg">
+                                    <div onClick={() => window.open("https://mullex.gitbook.io/mullex-docs")} className=" font-[lack] max-md:hidden mt-[24px] flex w-fit items-center border-[1px] border-[#ffffff] rounded-[12px] h-[40px] px-[29.5px] text-[16px] leading-[14px] cursor-pointer hover:bg-[#4A4A4A] transition-bg">
                                         Learn More
                                     </div>
                                 </div>
                             </div>
                             <div
-                                onClick={() => window.open("https://docs.mullex.io")}
+                                onClick={() => window.open("https://mullex.gitbook.io/mullex-docs")}
                                 className='w-full mt-[12px] md:hidden text-center justify-center font-[lack] flex items-center border-[1px] border-[#ffffff] rounded-[6px] md:rounded-[12px] h-[40px] md:h-[52px] px-[38.5px] text-[15px] md:text-[19.5px] leading-[14px] cursor-pointer hover:bg-[#4A4A4A] transition-opacity'
                             >
                                 Learn More

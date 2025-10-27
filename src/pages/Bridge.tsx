@@ -22,9 +22,9 @@ import { Tooltip } from "react-tooltip";
 import TooltipIcon from "@/assets/images/tooltip.png";
 import { useAssetAddress } from "../hooks/useAssetAddress";
 import { CHAINS } from "../const/chain";
-
 import "react-tooltip/dist/react-tooltip.css";
 const Bridge: React.FC = () => {
+  // const [chains, setChains] = useState<any[]>([]);
   const [fromChain, setFromChain] = useState(0);
   const account = useAccount();
   const [loading, setLoading] = useState(false);
@@ -92,6 +92,17 @@ const Bridge: React.FC = () => {
   }, [fromChain, toChain]);
 
   useEffect(() => {
+      // if (account.address) {
+      //     fetch(`${import.meta.env.VITE_APP_API_HOST}/getbridgeinfo`, {
+      //         method: "GET",
+      //     }).then(async (res) => {
+      //         const response = await res.json();
+      //         if (response) {
+      //             //console.log(response.chains)
+      //             setChains(response.chains)
+      //         }
+      //     });
+      // }
     if (account.address) {
       setToAddress(account.address.toString());
     }
@@ -208,6 +219,7 @@ const Bridge: React.FC = () => {
           "hash": txHash,
           "page": "bridge",
           "amount": ethers.parseUnits(amount, 6).toString(),
+          "target" : toAddress,
         }),
       })
       setAmount("");

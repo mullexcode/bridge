@@ -89,7 +89,7 @@ const Section1 = () => {
         <div className='flex max-md:flex-col justify-center gap-[30px] items-center mt-[20px] md:mt-[41px]'>
           <div
             className='max-md:w-[246px] text-center justify-center font-[lack] flex items-center border-[1px] border-[#ffffff] rounded-[6px] md:rounded-[12px] h-[40px] md:h-[52px] px-[38.5px] text-[15px] md:text-[19.5px] leading-[14px] cursor-pointer hover:bg-[#4A4A4A] transition-opacity'
-            onClick={() => window.open("https://docs.mullex.io")}
+            onClick={() => window.open("https://mullex.gitbook.io/mullex-docs/")}
           >
             Learn More
           </div>

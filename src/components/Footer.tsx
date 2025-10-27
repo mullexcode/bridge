@@ -56,7 +56,7 @@ const menus = [
     menus: [
       {
         title: "Docs",
-        link: "https://docs.mullex.io",
+        link: "https://mullex.gitbook.io/mullex-docs",
       },
       {
         title: "Github",
