@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Bridge from './pages/Bridge';
+import {Bridge} from './pages/Bridge';
 import './App.css';
 import Header from './components/Header';
 import Pool from './pages/Pool';

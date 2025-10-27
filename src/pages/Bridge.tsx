@@ -1,8 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Select from "../components/Select";
 import Input from "../components/Input";
-import USDCIcon from "@/assets/images/USDC.png";
-import MuUSDIcon from "@/assets/images/muUSD.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, isAddress, MaxUint256 } from "ethers";
@@ -20,11 +18,11 @@ import { toast } from "react-toastify";
 import Loading from "../components/Loading";
 import { Tooltip } from "react-tooltip";
 import TooltipIcon from "@/assets/images/tooltip.png";
-import { useAssetAddress } from "../hooks/useAssetAddress";
-import { CHAINS } from "../const/chain";
 import "react-tooltip/dist/react-tooltip.css";
+
 const Bridge: React.FC = () => {
-  // const [chains, setChains] = useState<any[]>([]);
+  const [chains, setChains] = useState<any[]>([]);
+  const [tokens, setTokens] = useState<any>();
   const [fromChain, setFromChain] = useState(0);
   const account = useAccount();
   const [loading, setLoading] = useState(false);
@@ -42,67 +40,86 @@ const Bridge: React.FC = () => {
   const { sendTransactionAsync } = useSendTransaction();
   // const { data: feeData } = useFeeData();
 
-  // 使用自定义hook获取assetAddress和currentContact
-  const { assetAddress, currentContact } = useAssetAddress({
-    fromChain,
-    selectedAsset,
-  });
+    const getChainData = (chains: any[], chainId: number) => {
+        return useMemo(() => {
+            return chains.find((item) => item.id.toString() === chainId.toString());
+        }, [chains, chainId]);
+    };
 
-  const { assetAddress: toAssetAddress, currentContact: toCurrentContact } =
-    useAssetAddress({
-      fromChain: toChain,
-      selectedAsset,
-    });
+    const getToken = (tokens: any, selectedAsset: string) => {
+        return useMemo(() => {
+            if (!selectedAsset) {
+                return "";
+             }
 
-  const hasUsdc = useMemo(() => {
-    return (
-      fromChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
-      toChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
-      fromChain !== Number(import.meta.env.VITE_APP_GOAT_CHAINID) &&
-      toChain !== Number(import.meta.env.VITE_APP_GOAT_CHAINID)
-    );
-  }, [fromChain, toChain]);
+            const info = tokens?.[selectedAsset];
+            const contracts = info?.contracts
+
+            return contracts;
+        }, [tokens, selectedAsset]);
+    };
+    const selectedToken = getToken(tokens, selectedAsset)
+
+    const fromChainData  = getChainData(chains, fromChain);
+    const fromContact = useMemo(() => {
+        return fromChainData?.contract;
+    }, [fromChainData]);
+
+    const fromTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+
+        return selectedToken[fromChain]
+    }, [selectedToken, fromChain]);
+
+    const toChainData  = getChainData(chains, toChain);
+    const toContact = useMemo(() => {
+        return toChainData?.contract;
+    }, [toChainData]);
+    const toTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+
+        return selectedToken[toChain]
+    }, [selectedToken, toChain]);
 
   const assets = useMemo(() => {
-    if (hasUsdc) {
-      return [
-        {
-          icon: MuUSDIcon,
-          label: "muUSD",
-          symbol: "muUSD",
-          id: "muUSD",
-        },
-        {
-          icon: USDCIcon,
-          label: "USDC",
-          symbol: "USDC",
-          id: "usdc",
-        },
-      ];
-    } else {
-      return [
-        {
-          icon: MuUSDIcon,
-          label: "muUSD",
-          symbol: "muUSD",
-          id: "muUSD",
-        },
-      ];
-    }
-  }, [fromChain, toChain]);
+      let allowedTokensInfo:any[] = [];
+
+      const assetsData = fromChainData?.assets;
+      if (assetsData){
+          Object.keys(assetsData).forEach(key => {
+              if (key.toString()===toChain.toString()){
+                  const allowedTokens = assetsData[key]
+
+                  allowedTokens.forEach((item :any) => {
+                      const info = tokens[item]
+                      if (info){
+                          allowedTokensInfo.push(info)
+                      }
+
+                  });
+              }
+          });
+      }
+
+      return allowedTokensInfo;
+  }, [fromChainData, toChain]);
 
   useEffect(() => {
-      // if (account.address) {
-      //     fetch(`${import.meta.env.VITE_APP_API_HOST}/getbridgeinfo`, {
-      //         method: "GET",
-      //     }).then(async (res) => {
-      //         const response = await res.json();
-      //         if (response) {
-      //             //console.log(response.chains)
-      //             setChains(response.chains)
-      //         }
-      //     });
-      // }
+      if (account.address) {
+          fetch(`${import.meta.env.VITE_APP_API_HOST}/getbridgeinfo`, {
+              method: "GET",
+          }).then(async (res) => {
+              const response = await res.json();
+              if (response) {
+                  setChains(response.chains)
+                  setTokens(response.tokens)
+              }
+          });
+      }
     if (account.address) {
       setToAddress(account.address.toString());
     }
@@ -129,7 +146,7 @@ const Bridge: React.FC = () => {
   }, [account.address]);
 
   const { data: tokenBalance } = useReadContract({
-    address: assetAddress,
+    address: fromTokenAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
     args: [account.address],
@@ -142,17 +159,17 @@ const Bridge: React.FC = () => {
   // });
 
   const { data: poolSize } = useReadContract({
-    address: toAssetAddress,
+    address: toTokenAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
-    args: [toCurrentContact],
+    args: [toContact],
     chainId: toChain,
   });
   const { data: allowance } = useReadContract({
-    address: assetAddress,
+    address: fromTokenAddress,
     abi: Erc20Abi,
     functionName: "allowance",
-    args: [account.address, currentContact],
+    args: [account.address, fromContact],
     chainId: fromChain,
   });
 
@@ -164,12 +181,12 @@ const Bridge: React.FC = () => {
       } else {
         const iface = new Interface(Erc20Abi);
         const approveData = iface.encodeFunctionData("approve", [
-          currentContact,
+            fromContact,
           MaxUint256,
         ]);
-        if (assetAddress && approveData) {
+        if (fromTokenAddress && approveData) {
           const tx = {
-            to: assetAddress as `0x${string}`,
+            to: fromTokenAddress as `0x${string}`,
             data: approveData as `0x${string}`,
             value: BigInt(0),
           };
@@ -197,7 +214,7 @@ const Bridge: React.FC = () => {
         toAddress,
       ]);
       const tx = {
-        to: currentContact as `0x${string}`,
+        to: fromContact as `0x${string}`,
         data: depositData as `0x${string}`,
         value: BigInt(0),
       };
@@ -214,7 +231,7 @@ const Bridge: React.FC = () => {
         body: JSON.stringify({
           "chainId": fromChain.toString(),
           "tochainId": toChain.toString(),
-          "token": assetAddress,
+          "token": fromTokenAddress,
           "address": account.address,
           "hash": txHash,
           "page": "bridge",
@@ -324,16 +341,20 @@ const Bridge: React.FC = () => {
                 if (value.toString() === toChain.toString()) {
                   setToChain(0);
                 }
+                setSelectedAsset("")
               }}
               value={fromChain}
-              options={CHAINS}
+              options={chains}
               placeholder="Select a chain"
               label="From"
             ></Select>
             <Select
-              onChange={(value) => setToChain(Number(value))}
+              onChange={(value) => {
+                  setToChain(Number(value))
+                  setSelectedAsset("")
+              }}
               value={toChain}
-              options={CHAINS.filter((el) => el.id !== fromChain)}
+              options={chains.filter((el) => el.id !== fromChain.toString())}
               placeholder="Select a chain"
               label="To"
             ></Select>
@@ -506,7 +527,7 @@ const Bridge: React.FC = () => {
           >
             <span>Max available amount</span>
             <span>
-              {selectedAsset !== "usdc"
+              {selectedAsset === "muUSD"
                 ? "Infinity"
                 : poolSize
                   ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
@@ -577,4 +598,4 @@ const Bridge: React.FC = () => {
   );
 };
 
-export default Bridge;
+export { Bridge };
