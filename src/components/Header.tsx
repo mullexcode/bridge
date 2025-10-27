@@ -73,9 +73,6 @@ export default function Header() {
         disconnect();
         localStorage.removeItem(STORAGE_KEY);
     };
-    if (location.pathname === "/app" || location.pathname === "/") {
-        return <></>;
-    }
 
     useEffect(() => {
         if (address) {
@@ -95,6 +92,10 @@ export default function Header() {
             });
         }
     }, [address]);
+
+    if (location.pathname === "/app" || location.pathname === "/") {
+        return <></>;
+    }
     return (
         <header className="w-full md:max-w-[1280px] md:mx-auto fixed px-4 py-3 top-0 z-10">
             <div className="mx-auto flex justify-between items-center">
