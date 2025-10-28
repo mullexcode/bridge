@@ -15,7 +15,6 @@ import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
 import clsx from "clsx";
 import { toast } from "react-toastify";
-// import { Tooltip } from "react-tooltip";
 import TooltipIcon from "@/assets/images/tooltip.png";
 import ArrowIcon from "@/assets/images/arrow.png";
 
@@ -47,9 +46,9 @@ const MuUSD: React.FC = () => {
   const selectedAsset = useMemo(() => {
     return type === "Deposit" ? "USDC" : "muUSD";
   }, [type]);
-    const targetAsset = useMemo(() => {
-        return type === "Deposit" ? "muUSD" : "USDC";
-    }, [type]);
+  const targetAsset = useMemo(() => {
+    return type === "Deposit" ? "muUSD" : "USDC";
+  }, [type]);
 
   const fromChainList = useMemo(() => {
       if (!chains||!type){
@@ -119,20 +118,6 @@ const MuUSD: React.FC = () => {
     const toContact = useMemo(() => {
         return toChainData?.contract;
     }, [toChainData]);
-
-
-    // 使用自定义hook获取assetAddress和currentContact
-  // const { assetAddress, currentContact } = useAssetAddress({
-  //   fromChain,
-  //   selectedAsset,
-  // });
-
-  // const { assetAddress: USDCAddress, currentContact: toCurrentContact } =
-  //   useAssetAddress({
-  //     fromChain: toChain,
-  //     selectedAsset: type === "Deposit" ? "muUSD" : "usdc",
-  //   });
-
 
   useEffect(() => {
       if (account.address) {
@@ -590,4 +575,4 @@ const MuUSD: React.FC = () => {
   );
 };
 
-export { MuUSD };
+export {MuUSD};

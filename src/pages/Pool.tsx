@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import Select from "../components/Select";
 import Input from "../components/Input";
-import USDCIcon from "@/assets/images/USDC.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, MaxUint256 } from "ethers";
@@ -16,26 +15,16 @@ import { config } from "../main";
 import { bridgeAbi } from "../assets/abi/bridge";
 import clsx from "clsx";
 import { toast } from "react-toastify";
-import { CHAINS } from "../const/chain";
 
 import "react-tooltip/dist/react-tooltip.css";
 import Loading from "../components/Loading";
-import { useAssetAddress } from "../hooks/useAssetAddress";
-
-const chains = CHAINS.filter(el => el.symbol !== "metis" && el.symbol !== "goat")
-
-const assets = [
-  {
-    icon: USDCIcon,
-    label: "USDC",
-    symbol: "USDC",
-    id: "usdc",
-  },
-];
 
 const Pool: React.FC = () => {
-  const [type, setType] = useState<"Add" | "Remove">("Add");
+  const [chains, setChains] = useState<any[]>([]);
+  const [tokens, setTokens] = useState<any[]>([]);
   const [fromChain, setFromChain] = useState(0);
+
+  const [type, setType] = useState<"Add" | "Remove">("Add");
   const account = useAccount();
   const [selectedAsset, setSelectedAsset] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -43,14 +32,61 @@ const Pool: React.FC = () => {
   const { sendTransactionAsync } = useSendTransaction();
   const { switchChain } = useSwitchChain();
 
-  // 使用自定义hook获取assetAddress和currentContact
-  const { assetAddress, currentContact } = useAssetAddress({
-    fromChain,
-    selectedAsset
-  });
+    const getToken = (tokens: any, selectedAsset: string) => {
+        return useMemo(() => {
+            if (!selectedAsset || !tokens) {
+                return "";
+            }
+
+            let token:any = null;
+            tokens.forEach((item:any) => {
+                if (item.symbol.toString().toLocaleUpperCase() === selectedAsset.toString().toLocaleUpperCase()) {
+                    token = item;
+                }
+            });
+
+            if (!token) {
+                return "";
+            }
+            return token.contracts;
+        }, [tokens, selectedAsset]);
+    };
+    const selectedToken = getToken(tokens, selectedAsset)
+    const selectedTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+        console.log("selectedToken", selectedToken[fromChain],"fromChain", fromChain )
+        return selectedToken[fromChain]
+    }, [selectedToken, fromChain]);
+
+    const getChainData = (chains: any[], chainId: number) => {
+        return useMemo(() => {
+            return chains.find((item) => item.id.toString() === chainId.toString());
+        }, [chains, chainId]);
+    };
+    const fromChainData  = getChainData(chains, fromChain);
+    const fromContact = useMemo(() => {
+        return fromChainData?.contract;
+    }, [fromChainData]);
+
+    useEffect(() => {
+        if (account.address) {
+            fetch(`${import.meta.env.VITE_APP_API_HOST}/getpoolinfo`, {
+                method: "GET",
+            }).then(async (res) => {
+                const response = await res.json();
+                if (response) {
+                    setChains(response.chains)
+                    setTokens(response.tokens)
+                }
+            });
+        }
+
+    }, [account.address]);
 
   const { data: tokenBalance } = useReadContract({
-    address: assetAddress,
+    address: selectedTokenAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
     args: [account.address],
@@ -58,7 +94,7 @@ const Pool: React.FC = () => {
   });
 
   const { data: currentLiquity } = useReadContract({
-    address: currentContact,
+    address: fromContact,
     abi: bridgeAbi,
     functionName: "queryLiquity",
     args: [selectedAsset, account.address],
@@ -66,12 +102,14 @@ const Pool: React.FC = () => {
   });
 
   const { data: allowance } = useReadContract({
-    address: assetAddress,
+    address: selectedTokenAddress,
     abi: Erc20Abi,
     functionName: "allowance",
-    args: [account.address, currentContact],
+    args: [account.address, fromContact],
     chainId: fromChain,
   });
+
+
   const submit = async () => {
     setLoading(true);
     try {
@@ -80,12 +118,12 @@ const Pool: React.FC = () => {
       } else {
         const iface = new Interface(Erc20Abi);
         const approveData = iface.encodeFunctionData("approve", [
-          currentContact,
+            fromContact,
           MaxUint256,
         ]);
-        if (assetAddress && approveData) {
+        if (selectedTokenAddress && approveData) {
           const tx = {
-            to: assetAddress as `0x${string}`,
+            to: selectedTokenAddress as `0x${string}`,
             data: approveData as `0x${string}`,
             value: BigInt(0),
           };
@@ -111,7 +149,7 @@ const Pool: React.FC = () => {
         [selectedAsset, ethers.parseUnits(amount, 6)]
       );
       const tx = {
-        to: currentContact as `0x${string}`,
+        to: fromContact as `0x${string}`,
         data: depositData as `0x${string}`,
         value: BigInt(0),
       };
@@ -127,7 +165,7 @@ const Pool: React.FC = () => {
         },
         body: JSON.stringify({
           "chainId": fromChain.toString(),
-          "token": assetAddress,
+          "token": selectedAsset,
           "address": account.address,
           "hash": txHash,
           "page": "pool",
@@ -222,7 +260,7 @@ const Pool: React.FC = () => {
             <Select
               onChange={(value) => setSelectedAsset(value.toString())}
               value={selectedAsset}
-              options={assets}
+              options={tokens}
               placeholder="Select a asset"
               label=""
             ></Select>
@@ -372,4 +410,4 @@ const Pool: React.FC = () => {
   );
 };
 
-export default Pool;
+export { Pool };
