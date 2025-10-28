@@ -22,8 +22,8 @@ import { useAccount } from "wagmi";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { desensitization, goScan } from "../utils";
-import { CHAINS } from "../const/chain";
-import MuUSDIcon from "@/assets/images/muUSD.png";
+
+// import MuUSDIcon from "@/assets/images/muUSD.png";
 import BigNumber from "bignumber.js";
 import { toast } from "react-toastify";
 import clsx from "clsx";
@@ -66,6 +66,9 @@ const filterButton = {
   Pool: ["Add Liquidity", "Remove Liquidity"],
 };
 const Transaction: React.FC = () => {
+  const [chains, setChains] = useState<any[]>([]);
+  const [tokens, setTokens] = useState<any[]>([]);
+
   const [type, setType] = useState<"Bridge" | "muUSD" | "Pool">("Bridge");
   const [filterButtonType, setFilterButtonType] = useState("");
   const [condition, setCondition] = useState("All");
@@ -105,6 +108,19 @@ const Transaction: React.FC = () => {
   );
 
   useEffect(() => {
+    if(address){
+        fetch(`${import.meta.env.VITE_APP_API_HOST}/getmetadata`, {
+            method: "GET",
+        }).then(async (res) => {
+            const response = await res.json();
+            if (response) {
+                setChains(response.chains)
+                setTokens(response.tokens)
+            }
+        });
+    }
+
+
     if (address) {
       fetch(`${import.meta.env.VITE_APP_API_HOST}/txcount`, {
         method: "POST",
@@ -160,22 +176,29 @@ const Transaction: React.FC = () => {
           setTxList({
             ...response,
             txlist: response.txlist ? response.txlist.map((el: any) => {
-              const chian = CHAINS.find(
+              const fromChain = chains.find(
                 (cel) => cel.id.toString() === el.chainid
               );
-              const targetChian = CHAINS.find(
+              const fromAsset = tokens.find(
+                (cel) => cel.id.toString().toUpperCase() === el.token.toString().toUpperCase()
+              );
+              const toChain = chains.find(
                 (cel) => cel.id.toString() === el.targetchainid
+              );
+              const toAsset = tokens.find(
+                (cel) => cel.id.toString().toUpperCase() === el.targettoken.toString().toUpperCase()
               );
               return {
                 ...el,
                 amount: formatUnits(el.amount || "0", 6).toString(),
-                chainIcon: chian?.icon || ETHIcon,
-                chainName: chian?.label || "Ethereum",
-                targetChainIcon: targetChian?.icon || ETHIcon,
-                targetChainName: targetChian?.label || "Ethereum",
+                chainIcon: fromChain?.icon || ETHIcon,
+                chainName: fromChain?.label || "Ethereum",
+                tokenIcon: fromAsset ? fromAsset.icon : USDCIcon,
+                targetChainIcon: toChain?.icon || ETHIcon,
+                targetChainName: toChain?.label || "Ethereum",
                 targetTokenIcon:
-                  el.targettoken === "muusd" ? MuUSDIcon : USDCIcon,
-                tokenIcon: el.token === "muusd" ? MuUSDIcon : USDCIcon,
+                    toAsset ? toAsset.icon : USDCIcon,
+
                 baseFee:
                   el.chainid === el.targetchainid
                     ? "0"
@@ -787,4 +810,4 @@ const Transaction: React.FC = () => {
   );
 };
 
-export default Transaction;
+export {Transaction};

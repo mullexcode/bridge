@@ -5,7 +5,7 @@ import Header from './components/Header';
 import {Pool} from './pages/Pool';
 import {MuUSD} from './pages/muUsd';
 import Home from './pages/Home';
-import Transaction from './pages/Transaction';
+import {Transaction} from './pages/Transaction';
 
 function App() {
   return (
