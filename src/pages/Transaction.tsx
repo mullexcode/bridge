@@ -21,7 +21,7 @@ import {
 import { useAccount } from "wagmi";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { desensitization, goScan } from "../utils";
+import { desensitization} from "../utils";
 
 // import MuUSDIcon from "@/assets/images/muUSD.png";
 import BigNumber from "bignumber.js";
@@ -65,6 +65,7 @@ const filterButton = {
   muUSD: ["Deposit", "Redeem"],
   Pool: ["Add Liquidity", "Remove Liquidity"],
 };
+
 const Transaction: React.FC = () => {
   const [chains, setChains] = useState<any[]>([]);
   const [tokens, setTokens] = useState<any[]>([]);
@@ -107,6 +108,15 @@ const Transaction: React.FC = () => {
     [type]
   );
 
+  const goScan = (chainId: string, hash: string) => {
+      const chain = chains?.find((el) => el.id.toString() === chainId)
+      if (!chain) {
+        return;
+      }
+
+      window.open(`${chain['scan']}tx/${hash}`, '_blank');
+  }
+
   useEffect(() => {
     if(address){
         fetch(`${import.meta.env.VITE_APP_API_HOST}/getmetadata`, {
@@ -119,7 +129,6 @@ const Transaction: React.FC = () => {
             }
         });
     }
-
 
     if (address) {
       fetch(`${import.meta.env.VITE_APP_API_HOST}/txcount`, {
