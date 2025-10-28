@@ -4,7 +4,7 @@ import '@rainbow-me/rainbowkit/styles.css';
 import { getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
-import { goat, linea, lineaSepolia, mainnet, metis, metisSepolia, sepolia } from 'wagmi/chains';
+import { goat, linea, lineaSepolia, mainnet, metis, metisSepolia, sepolia,bsc,bscTestnet } from 'wagmi/chains';
 import { ToastContainer } from "react-toastify";
 import './index.css';
 import App from './App.tsx';
@@ -16,7 +16,7 @@ const queryClient = new QueryClient();
 
 // 配置Wagmi v2
 export const config = createConfig({
-  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest],
+  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest, bsc,bscTestnet],
   transports: {
     [mainnet.id]: http(),
     [sepolia.id]: http(),
@@ -26,6 +26,8 @@ export const config = createConfig({
     [goat.id]: http(),
     [GoatTest.id]: http(),
     [metis.id]: http("https://metis.drpc.org"),
+    [bsc.id]: http(),
+    [bscTestnet.id]:http(),
   },
 });
 
