@@ -117,8 +117,10 @@ const Transaction: React.FC = () => {
       window.open(`${chain['scan']}tx/${hash}`, '_blank');
   }
 
-  useEffect(() => {
-    if(address){
+    useEffect(() => {
+        if (!address) {
+            return
+        }
         fetch(`${import.meta.env.VITE_APP_API_HOST}/getmetadata`, {
             method: "GET",
         }).then(async (res) => {
@@ -128,6 +130,11 @@ const Transaction: React.FC = () => {
                 setTokens(response.tokens)
             }
         });
+    }, [address]);
+
+  useEffect(() => {
+    if (chains.length===0||tokens.length===0){
+        return
     }
 
     if (address) {
@@ -197,6 +204,7 @@ const Transaction: React.FC = () => {
               const toAsset = tokens.find(
                 (cel) => cel.id.toString().toUpperCase() === el.targettoken.toString().toUpperCase()
               );
+
               return {
                 ...el,
                 amount: formatUnits(el.amount || "0", 6).toString(),
@@ -230,7 +238,7 @@ const Transaction: React.FC = () => {
         }
       });
     }
-  }, [address, page, type, getFee, filterButtonType, condition]);
+  }, [chains,tokens,address, page, type, getFee, filterButtonType, condition]);
 
   const copyAddress = useCallback((address: string) => {
     if (address) {
