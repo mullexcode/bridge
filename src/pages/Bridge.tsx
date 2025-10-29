@@ -46,44 +46,66 @@ const Bridge: React.FC = () => {
             return chains.find((item) => item.id.toString() === chainId.toString());
         }, [chains, chainId]);
     };
-
-    const getToken = (tokens: any, selectedAsset: string) => {
-        return useMemo(() => {
-            if (!selectedAsset) {
-                return "";
-             }
-
-            const info = tokens?.[selectedAsset];
-            const contracts = info?.contracts
-
-            return contracts;
-        }, [tokens, selectedAsset]);
-    };
-    const selectedToken = getToken(tokens, selectedAsset)
-
     const fromChainData  = getChainData(chains, fromChain);
     const fromContact = useMemo(() => {
         return fromChainData?.contract;
     }, [fromChainData]);
-
-    const fromTokenAddress = useMemo(() => {
-        if (!selectedToken) {
-            return "";
-        }
-
-        return selectedToken[fromChain]
-    }, [selectedToken, fromChain]);
-
     const toChainData  = getChainData(chains, toChain);
     const toContact = useMemo(() => {
         return toChainData?.contract;
     }, [toChainData]);
-    const toTokenAddress = useMemo(() => {
+
+    const getToken = (tokens: any, selectedAsset: string) => {
+        return useMemo(() => {
+            if (!selectedAsset|| !tokens) {
+                return "";
+             }
+
+            return tokens[selectedAsset];
+        }, [tokens, selectedAsset]);
+    };
+    const selectedToken = getToken(tokens, selectedAsset)
+    const fromTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+        const contracts = selectedToken?.contracts
+        return contracts[fromChain]
+    }, [selectedToken, fromChain]);
+    const fromTokenDecimal = useMemo(() => {
         if (!selectedToken) {
             return "";
         }
 
-        return selectedToken[toChain]
+        const decimals = selectedToken?.decimals;
+        const result = decimals?.[fromChain];
+        if(result){
+            // console.log("decimals result",result)
+            return result;
+        }
+        // console.log("decimals",6)
+        return 6;
+    }, [selectedToken, fromChain]);
+    const toTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+        const contracts = selectedToken?.contracts
+        return contracts[toChain]
+    }, [selectedToken, toChain]);
+    const toTokenDecimal = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+
+        const decimals = selectedToken?.decimals;
+        const result = decimals?.[fromChain];
+        if(result){
+            // console.log("decimals result",result)
+            return result;
+        }
+        // console.log("decimals",6)
+        return 6;
     }, [selectedToken, toChain]);
 
   const assets = useMemo(() => {
@@ -218,7 +240,7 @@ const Bridge: React.FC = () => {
 
       const depositData = iface.encodeFunctionData("depositToken", [
         selectedAsset,
-        ethers.parseUnits(amount, 6),
+        ethers.parseUnits(amount, fromTokenDecimal),
         toChain,
         toAddress,
       ]);
@@ -244,7 +266,7 @@ const Bridge: React.FC = () => {
           "address": account.address,
           "hash": txHash,
           "page": "bridge",
-          "amount": ethers.parseUnits(amount, 6).toString(),
+          "amount": ethers.parseUnits(amount, fromTokenDecimal).toString(),
           "target" : toAddress,
         }),
       })
@@ -258,33 +280,6 @@ const Bridge: React.FC = () => {
     }
   };
 
-
-  // useEffect(() => {
-  //   if (!submitDisabled && isAddress(toAddress)) {
-  //     const iface = new Interface(bridgeAbi);
-  //     const depositData = iface.encodeFunctionData("depositToken", [
-  //       selectedAsset,
-  //       ethers.parseUnits(amount, 6),
-  //       toChain,
-  //       toAddress,
-  //     ]);
-  //     try {
-  //       estimateGas(config, {
-  //         account: account.address,
-  //         to: currentContact as `0x${string}`,
-  //         data: depositData as `0x${string}`,
-  //         chainId: fromChain as 1 | Number(import.meta.env.VITE_APP_ETH_CHAINID) |  Number(import.meta.env.VITE_APP_METIS_CHAINID) | 1088,
-  //       }).then(gasEstimateRes => {
-  //         setGasFee(ethers.formatEther(new BigNumber(gasEstimateRes).times(feeData?.maxFeePerGas || 0).toString()).toString());
-
-  //       });
-  //     } catch (error) {
-  //       setGasFee("--")
-  //     }
-  //   } else {
-  //     setGasFee("--")
-  //   }
-  // }, [selectedAsset, submitDisabled, amount, toChain, toAddress])
   const selectedAssetFormat = useMemo(() => {
     return selectedAsset === "muUSD"
       ? selectedAsset
@@ -319,12 +314,18 @@ const Bridge: React.FC = () => {
   }, [amount, selectedAssetFormat]);
 
   const { overPoolSize } = useMemo(() => {
-    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
+    if (!tokenBalance) {
+      return {
+        overPoolSize: false,
+      };
+    }
+
+    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, toTokenDecimal);
     return {
       overPoolSize:
         new BigNumber(amount).gt(_poolSize) && selectedAsset !== "muUSD",
     };
-  }, [tokenBalance, poolSize, amount]);
+  }, [toTokenDecimal, tokenBalance, poolSize, amount]);
 
   const submitDisabled = useMemo(() => {
     return !(
@@ -382,7 +383,7 @@ const Bridge: React.FC = () => {
                 Balance:{" "}
                 {tokenBalance
                   ? new BigNumber(
-                    ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
+                    ethers.formatUnits(tokenBalance.toString() || 0, fromTokenDecimal) || 0
                   ).toString()
                   : "--"}
               </div>
@@ -392,7 +393,7 @@ const Bridge: React.FC = () => {
               placeholder={"Please input amount"}
               value={amount}
               onBlur={(e) => {
-                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
+                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), fromTokenDecimal)
                 if (new BigNumber(e).lt(" 0.000001")) {
                   setAmountError("Minimum amount is 0.000001");
                   return;
@@ -417,7 +418,7 @@ const Bridge: React.FC = () => {
                 setAmountError("");
               }}
               onChange={(e) => {
-                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
+                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), fromTokenDecimal)
                 e = e.replace(/^\D*(\d*(?:\.\d{0,10})?).*$/g, "$1");
                 setAmount(e);
                 if (new BigNumber(e).lt(" 0.000001")) {
@@ -437,13 +438,6 @@ const Bridge: React.FC = () => {
                 } else {
                   setAmountError("");
                 }
-                // const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
-                // const _poolSize = ethers.formatUnits((poolSize?.toString() || 0), 6)
-                // if (new BigNumber(e).lte(_tokenBalance) && (new BigNumber(e).lte(_poolSize) || selectedAsset === "musd")) {
-                //   setAmount(e)
-                // } else {
-                //   setAmount(BigNumber.minimum(_tokenBalance, _poolSize).toString())
-                // }
               }}
             ></Input>
             {amountError && (
@@ -539,7 +533,7 @@ const Bridge: React.FC = () => {
               {selectedAsset === "muUSD"
                 ? "Infinity"
                 : poolSize
-                  ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
+                  ? ethers.formatUnits(poolSize.toString() || 0, toTokenDecimal).toString()
                   : "--"}
             </span>
           </div>
