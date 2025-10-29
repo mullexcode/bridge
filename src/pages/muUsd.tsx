@@ -76,14 +76,11 @@ const MuUSD: React.FC = () => {
 
     const getToken = (tokens: any, selectedAsset: string) => {
         return useMemo(() => {
-            if (!selectedAsset) {
+            if (!selectedAsset|| !tokens) {
                 return "";
             }
 
-            const info = tokens?.[selectedAsset];
-            const contracts = info?.contracts
-
-            return contracts;
+            return tokens[selectedAsset];
         }, [tokens, selectedAsset]);
     };
     const selectedToken = getToken(tokens, selectedAsset)
@@ -93,14 +90,43 @@ const MuUSD: React.FC = () => {
             return "";
         }
 
-        return selectedToken[fromChain]
+        const contracts = selectedToken?.contracts
+        return contracts[fromChain]
+    }, [selectedToken, fromChain]);
+    const fromTokenDecimal = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+
+        const decimals = selectedToken?.decimals;
+        const result = decimals?.[fromChain];
+        if(result){
+            // console.log("decimals result",result)
+            return result;
+        }
+        // console.log("decimals",6)
+        return 6;
     }, [selectedToken, fromChain]);
     const toTokenAddress = useMemo(() => {
         if (!targetToken) {
             return "";
         }
+        const contracts = targetToken?.contracts
+        return contracts[toChain]
+    }, [targetToken, toChain]);
+    const toTokenDecimal = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
 
-        return targetToken[toChain]
+        const decimals = selectedToken?.decimals;
+        const result = decimals?.[fromChain];
+        if(result){
+            // console.log("decimals result",result)
+            return result;
+        }
+        // console.log("decimals",6)
+        return 6;
     }, [targetToken, toChain]);
 
     const getChainData = (chains: any[], chainId: number) => {
@@ -207,7 +233,7 @@ const MuUSD: React.FC = () => {
       const iface = new Interface(bridgeAbi);
       const depositData = iface.encodeFunctionData(
         type === "Deposit" ? "mappingMUSD" : "withdrawUSD",
-        ["usdc", toChain, toAddress, ethers.parseUnits(amount, 6)]
+        ["usdc", toChain, toAddress, ethers.parseUnits(amount, fromTokenDecimal)]
       );
       const tx = {
         to: fromContact as `0x${string}`,
@@ -233,7 +259,7 @@ const MuUSD: React.FC = () => {
           "page": "muusd",
           "toToken": targetAsset,
           "kind": type === "Deposit" ? "0" : "1",
-          "amount": ethers.parseUnits(amount, 6).toString(),
+          "amount": ethers.parseUnits(amount, fromTokenDecimal).toString(),
         }),
       })
       setLoading(false);
@@ -247,19 +273,27 @@ const MuUSD: React.FC = () => {
   };
 
   const formatTokenBalance = useMemo(() => {
-    return ethers.formatUnits(tokenBalance?.toString() || 0, 6);
-  }, [tokenBalance]);
+    if(!fromTokenDecimal){
+        return "";
+    }
+    return ethers.formatUnits(tokenBalance?.toString() || 0, fromTokenDecimal);
+  }, [fromTokenDecimal,tokenBalance]);
 
   const isFlag = useMemo(() => {
     return fromChain !== 0 && toChain === fromChain;
   }, [fromChain, toChain]);
 
   const { overPoolSize } = useMemo(() => {
-    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
+    if(!toTokenDecimal){
+        return {
+            overPoolSize: false,
+        };
+    }
+    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, toTokenDecimal);
     return {
       overPoolSize: new BigNumber(amount).lte(_poolSize) || type === "Deposit",
     };
-  }, [amount, type, poolSize]);
+  }, [toTokenDecimal, amount, type, poolSize]);
 
   const selectedAssetFormat = useMemo(() => {
     return selectedAsset === "muUSD"
@@ -517,7 +551,7 @@ const MuUSD: React.FC = () => {
               <span>
                 {
                     poolSize
-                    ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
+                    ? ethers.formatUnits(poolSize.toString() || 0, toTokenDecimal).toString()
                     : "--"}
               </span>
             </div>

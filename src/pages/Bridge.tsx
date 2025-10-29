@@ -262,7 +262,7 @@ const Bridge: React.FC = () => {
         body: JSON.stringify({
           "chainId": fromChain.toString(),
           "tochainId": toChain.toString(),
-          "token": fromTokenAddress,
+          "token": selectedAsset,
           "address": account.address,
           "hash": txHash,
           "page": "bridge",
