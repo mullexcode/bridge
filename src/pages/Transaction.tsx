@@ -280,6 +280,7 @@ const Transaction: React.FC = () => {
                 }
                 setType(el as any);
                 setPage(0);
+                setTxList(null)
               }}
               className={clsx(
                 "w-[45%] md:w-[255px] h-[36px] flex items-center justify-center rounded-[10px] cursor-pointer",
