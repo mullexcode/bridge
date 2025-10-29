@@ -44,3 +44,21 @@ export function getQueryString(name: string) {
     }
     return null;
 }
+
+export const imageCache = new Map<string, Promise<string>>();
+
+export const preloadImage = (src: string): Promise<string> => {
+    if (imageCache.has(src)) {
+        return imageCache.get(src)!;
+    }
+
+    const promise = new Promise<string>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(src);
+        img.onerror = reject;
+        img.src = src;
+    });
+
+    imageCache.set(src, promise);
+    return promise;
+};

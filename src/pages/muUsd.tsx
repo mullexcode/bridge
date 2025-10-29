@@ -21,6 +21,7 @@ import ArrowIcon from "@/assets/images/arrow.png";
 import "react-tooltip/dist/react-tooltip.css";
 import Loading from "../components/Loading";
 import { Tooltip } from "react-tooltip";
+import { preloadImage } from "../utils";
 
 const MuUSD: React.FC = () => {
     const [chains, setChains] = useState<any>();
@@ -131,6 +132,13 @@ const MuUSD: React.FC = () => {
                   setTokens(response.tokens)
                   setUsdcChains(response.USDCChains)
                   setMuUSDChains(response.muusdChains)
+                  response.chains?.forEach((item: any) => {
+                      preloadImage(item.icon)
+                  });
+
+                  Object.keys(response.tokens).forEach((key: string) => {
+                      preloadImage(response.tokens[key].icon)
+                  });
               }
           });
       }

@@ -11,6 +11,7 @@ import NoDataIcon from "@/assets/images/no-data.png";
 import PendingIcon from "@/assets/images/pending.png";
 import SuccessIcon from "@/assets/images/success.png";
 import FailIcon from "@/assets/images/fail.png";
+import { preloadImage } from "../utils";
 import {
   Checkbox,
   Menu,
@@ -128,6 +129,12 @@ const Transaction: React.FC = () => {
             if (response) {
                 setChains(response.chains)
                 setTokens(response.tokens)
+                response.chains?.forEach((item: any) => {
+                    preloadImage(item.icon)
+                });
+                response.tokens?.forEach((item: any) => {
+                    preloadImage(item.icon)
+                });
             }
         });
     }, [address]);

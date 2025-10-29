@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Select from "../components/Select";
+import { preloadImage } from "../utils";
 import Input from "../components/Input";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
@@ -117,9 +118,17 @@ const Bridge: React.FC = () => {
               if (response) {
                   setChains(response.chains)
                   setTokens(response.tokens)
+                  response.chains?.forEach((item: any) => {
+                      preloadImage(item.icon)
+                  });
+
+                  Object.keys(response.tokens).forEach((key: string) => {
+                      preloadImage(response.tokens[key].icon)
+                  });
               }
           });
       }
+
     if (account.address) {
       setToAddress(account.address.toString());
     }

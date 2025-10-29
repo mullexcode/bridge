@@ -18,6 +18,7 @@ import { toast } from "react-toastify";
 
 import "react-tooltip/dist/react-tooltip.css";
 import Loading from "../components/Loading";
+import {preloadImage} from "../utils";
 
 const Pool: React.FC = () => {
   const [chains, setChains] = useState<any[]>([]);
@@ -79,6 +80,12 @@ const Pool: React.FC = () => {
                 if (response) {
                     setChains(response.chains)
                     setTokens(response.tokens)
+                    response.chains?.forEach((item: any) => {
+                        preloadImage(item.icon)
+                    });
+                    response.tokens?.forEach((item: any) => {
+                        preloadImage(item.icon)
+                    });
                 }
             });
         }
