@@ -54,7 +54,6 @@ const Pool: React.FC = () => {
         if (!selectedToken) {
             return "";
         }
-        console.log("selectedToken", selectedToken[fromChain],"fromChain", fromChain )
         return selectedToken.contracts[fromChain]
     }, [selectedToken, fromChain]);
     const selectedTokenDecimal:number = useMemo(() => {
