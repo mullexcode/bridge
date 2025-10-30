@@ -204,7 +204,6 @@ const Transaction: React.FC = () => {
               const fromAsset = tokens.find(
                 (cel) => cel.id.toString().toUpperCase() === el.token.toString().toUpperCase()
               );
-              const fromDecimal:number = fromAsset?.decimals?.[el.chainid];
               const toChain = chains.find(
                 (cel) => cel.id.toString() === el.targetchainid
               );
@@ -214,7 +213,7 @@ const Transaction: React.FC = () => {
 
               return {
                 ...el,
-                amount: formatUnits(el.amount || "0",  fromDecimal? fromDecimal:6).toString(),
+                amount: formatUnits(el.amount || "0",  6).toString(),
                 chainIcon: fromChain?.icon || ETHIcon,
                 chainName: fromChain?.label || "Ethereum",
                 tokenIcon: fromAsset ? fromAsset.icon : USDCIcon,
@@ -236,7 +235,7 @@ const Transaction: React.FC = () => {
                     ? 0
                     : getFee(
                       el.chainid,
-                      formatUnits(el.amount || "0", fromDecimal? fromDecimal: 6).toString(),
+                      formatUnits(el.amount || "0", 6).toString(),
                       el.targettoken
                     ),
               };

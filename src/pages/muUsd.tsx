@@ -259,7 +259,7 @@ const MuUSD: React.FC = () => {
           "page": "muusd",
           "toToken": targetAsset,
           "kind": type === "Deposit" ? "0" : "1",
-          "amount": ethers.parseUnits(amount, fromTokenDecimal).toString(),
+          "amount": ethers.parseUnits(amount, 6).toString(),
         }),
       })
       setLoading(false);
