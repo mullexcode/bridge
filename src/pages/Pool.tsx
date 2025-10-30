@@ -183,7 +183,7 @@ const Pool: React.FC = () => {
           "hash": txHash,
           "page": "pool",
           "kind": type === "Add" ? "0" : "1",
-          "amount": ethers.parseUnits(amount, selectedTokenDecimal).toString(),
+          "amount": ethers.parseUnits(amount, 6).toString(),
         }),
       })
       setLoading(false);
