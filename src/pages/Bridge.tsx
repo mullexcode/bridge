@@ -99,12 +99,10 @@ const Bridge: React.FC = () => {
         }
 
         const decimals = selectedToken?.decimals;
-        const result = decimals?.[fromChain];
+        const result = decimals?.[toChain];
         if(result){
-            // console.log("decimals result",result)
             return result;
         }
-        // console.log("decimals",6)
         return 6;
     }, [selectedToken, toChain]);
 
