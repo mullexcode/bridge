@@ -46,10 +46,7 @@ const Pool: React.FC = () => {
                 }
             });
 
-            if (!token) {
-                return "";
-            }
-            return token.contracts;
+            return token;
         }, [tokens, selectedAsset]);
     };
     const selectedToken = getToken(tokens, selectedAsset)
@@ -58,7 +55,17 @@ const Pool: React.FC = () => {
             return "";
         }
         console.log("selectedToken", selectedToken[fromChain],"fromChain", fromChain )
-        return selectedToken[fromChain]
+        return selectedToken.contracts[fromChain]
+    }, [selectedToken, fromChain]);
+    const selectedTokenDecimal:number = useMemo(() => {
+        if (!selectedToken||!selectedToken.decimals) {
+            return 6;
+        }
+        const result = selectedToken.decimals[fromChain]
+        if (result) {
+            return result;
+        }
+        return 6;
     }, [selectedToken, fromChain]);
 
     const getChainData = (chains: any[], chainId: number) => {
@@ -153,7 +160,7 @@ const Pool: React.FC = () => {
 
       const depositData = iface.encodeFunctionData(
         type === "Add" ? "addLiquity" : "delLiquity",
-        [selectedAsset, ethers.parseUnits(amount, 6)]
+        [selectedAsset, ethers.parseUnits(amount, selectedTokenDecimal)]
       );
       const tx = {
         to: fromContact as `0x${string}`,
@@ -177,7 +184,7 @@ const Pool: React.FC = () => {
           "hash": txHash,
           "page": "pool",
           "kind": type === "Add" ? "0" : "1",
-          "amount": ethers.parseUnits(amount, 6).toString(),
+          "amount": ethers.parseUnits(amount, selectedTokenDecimal).toString(),
         }),
       })
       setLoading(false);
@@ -194,12 +201,12 @@ const Pool: React.FC = () => {
   }, [fromChain, selectedAsset]);
 
   const formatTokenBalance = useMemo(() => {
-    return ethers.formatUnits(tokenBalance?.toString() || 0, 6);
-  }, [tokenBalance]);
+    return ethers.formatUnits(tokenBalance?.toString() || 0, selectedTokenDecimal);
+  }, [tokenBalance,selectedTokenDecimal]);
 
   const liquidity = useMemo(() => {
-    return ethers.formatUnits(currentLiquity?.toString() || 0, 6);
-  }, [currentLiquity]);
+    return ethers.formatUnits(currentLiquity?.toString() || 0, selectedTokenDecimal);
+  }, [currentLiquity,selectedTokenDecimal]);
 
   const buttonText = useMemo(() => {
     if (!account.address) {
