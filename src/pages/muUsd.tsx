@@ -152,7 +152,7 @@ const MuUSD: React.FC = () => {
               method: "GET",
           }).then(async (res) => {
               const response = await res.json();
-              console.log("response", response)
+              // console.log("response", response)
               if (response) {
                   setChains(response.chains)
                   setTokens(response.tokens)

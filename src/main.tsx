@@ -27,7 +27,7 @@ export const config = createConfig({
     [GoatTest.id]: http(),
     [metis.id]: http("https://metis.drpc.org"),
     [bsc.id]: http(),
-    [bscTestnet.id]:http("https://bsc-testnet.public.blastapi.io"),
+    [bscTestnet.id]:http(),
     [xLayer.id]: http(),
   },
 });
@@ -46,7 +46,7 @@ const WagmiConfig = getDefaultConfig({
     [GoatTest.id]: http(),
     [linea.id]: http("https://lb.drpc.org/linea/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
     [metis.id]: http("https://lb.drpc.org/metis/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
-    [bsc.id]:http("https://lb.drpc.org/metis/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
+    [bsc.id]:http("https://lb.drpc.org/bsc/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
     [bscTestnet.id]:http(),
   },
 });
