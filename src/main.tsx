@@ -14,6 +14,7 @@ import {
     base, baseSepolia,
     arbitrum, arbitrumSepolia,
     plasma,plasmaTestnet,
+    avalanche,avalancheFuji,
 } from 'wagmi/chains';
 import { ToastContainer } from "react-toastify";
 import './index.css';
@@ -26,7 +27,8 @@ const queryClient = new QueryClient();
 
 // 配置Wagmi v2
 export const config = createConfig({
-  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest, bsc,bscTestnet, base,baseSepolia,arbitrum,arbitrumSepolia,plasma,plasmaTestnet],
+  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest, bsc,bscTestnet,
+      base,baseSepolia,arbitrum,arbitrumSepolia,plasma,plasmaTestnet,avalanche,avalancheFuji,],
   transports: {
     [mainnet.id]: http(),
     [sepolia.id]: http(),
@@ -44,6 +46,8 @@ export const config = createConfig({
     [arbitrumSepolia.id]:http(),
     [plasma.id]:http(),
     [plasmaTestnet.id]:http(),
+    [avalanche.id]:http(),
+    [avalancheFuji.id]:http(),
   },
 });
 
@@ -51,7 +55,8 @@ export const config = createConfig({
 const WagmiConfig = getDefaultConfig({
   appName: "cece",
   projectId: "52a9534713853d81195801410732ba51",
-  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest,bsc,bscTestnet, base,baseSepolia,arbitrum,arbitrumSepolia,plasma,plasmaTestnet,],
+  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest,bsc,bscTestnet,
+      base,baseSepolia,arbitrum,arbitrumSepolia,plasma,plasmaTestnet,avalanche,avalancheFuji,],
   transports: {
     [mainnet.id]: http("https://lb.drpc.org/ethereum/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
     [sepolia.id]: http(),
@@ -69,6 +74,8 @@ const WagmiConfig = getDefaultConfig({
     [arbitrumSepolia.id]:http(),
     [plasma.id]:http(),
     [plasmaTestnet.id]:http(),
+    [avalanche.id]:http(),
+    [avalancheFuji.id]:http(),
   },
 });
 
