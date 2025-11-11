@@ -51,7 +51,7 @@ export const config = createConfig({
 const WagmiConfig = getDefaultConfig({
   appName: "cece",
   projectId: "52a9534713853d81195801410732ba51",
-  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest,bsc,bscTestnet, base,baseSepolia,arbitrum,arbitrumSepolia],
+  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest,bsc,bscTestnet, base,baseSepolia,arbitrum,arbitrumSepolia,plasma,plasmaTestnet,],
   transports: {
     [mainnet.id]: http("https://lb.drpc.org/ethereum/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
     [sepolia.id]: http(),
