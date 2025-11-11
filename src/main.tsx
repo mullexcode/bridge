@@ -6,17 +6,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { WagmiProvider, createConfig, http } from 'wagmi';
 import {
     goat,
-    linea,
-    lineaSepolia,
+    linea, lineaSepolia,
     mainnet,
-    metis,
-    metisSepolia,
+    metis, metisSepolia,
     sepolia,
-    bsc,
-    bscTestnet,
-    base,
-    baseSepolia,
-    arbitrum, arbitrumSepolia
+    bsc, bscTestnet,
+    base, baseSepolia,
+    arbitrum, arbitrumSepolia,
+    plasma,plasmaTestnet,
 } from 'wagmi/chains';
 import { ToastContainer } from "react-toastify";
 import './index.css';
@@ -29,7 +26,7 @@ const queryClient = new QueryClient();
 
 // 配置Wagmi v2
 export const config = createConfig({
-  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest, bsc,bscTestnet, base,baseSepolia,arbitrum,arbitrumSepolia],
+  chains: [mainnet, sepolia, metisSepolia, metis, linea, lineaSepolia, goat, GoatTest, bsc,bscTestnet, base,baseSepolia,arbitrum,arbitrumSepolia,plasma,plasmaTestnet],
   transports: {
     [mainnet.id]: http(),
     [sepolia.id]: http(),
@@ -45,6 +42,8 @@ export const config = createConfig({
     [baseSepolia.id]:http(),
     [arbitrum.id]:http(),
     [arbitrumSepolia.id]:http(),
+    [plasma.id]:http(),
+    [plasmaTestnet.id]:http(),
   },
 });
 
@@ -68,6 +67,8 @@ const WagmiConfig = getDefaultConfig({
     [baseSepolia.id]:http(),
     [arbitrum.id] :http("https://lb.drpc.org/arbitrum/AnSelbKJaEZaq48Ebep8UBLLuR2Zj9gR8Iy4zltYSRe_"),
     [arbitrumSepolia.id]:http(),
+    [plasma.id]:http(),
+    [plasmaTestnet.id]:http(),
   },
 });
 
