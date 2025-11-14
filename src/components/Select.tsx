@@ -29,7 +29,7 @@ export default function Select({
 }) {
   const selected = useMemo(() => {
     if (value && options.length > 0) {
-      return options.find((option) => option.id === value);
+      return options.find((option) => option.id.toString() === value.toString());
     }
     return null
   }, [options, value])

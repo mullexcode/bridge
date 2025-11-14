@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Select from "../components/Select";
+import { preloadImage } from "../utils";
 import Input from "../components/Input";
-import USDCIcon from "@/assets/images/USDC.png";
-import MuUSDIcon from "@/assets/images/muUSD.png";
 import BigNumber from "bignumber.js";
 import { Erc20Abi } from "../assets/abi/erc20";
 import { ethers, Interface, isAddress, MaxUint256 } from "ethers";
@@ -20,11 +19,11 @@ import { toast } from "react-toastify";
 import Loading from "../components/Loading";
 import { Tooltip } from "react-tooltip";
 import TooltipIcon from "@/assets/images/tooltip.png";
-import { useAssetAddress } from "../hooks/useAssetAddress";
-import { CHAINS } from "../const/chain";
 import "react-tooltip/dist/react-tooltip.css";
+
 const Bridge: React.FC = () => {
-  // const [chains, setChains] = useState<any[]>([]);
+  const [chains, setChains] = useState<any[]>([]);
+  const [tokens, setTokens] = useState<any>();
   const [fromChain, setFromChain] = useState(0);
   const account = useAccount();
   const [loading, setLoading] = useState(false);
@@ -42,67 +41,114 @@ const Bridge: React.FC = () => {
   const { sendTransactionAsync } = useSendTransaction();
   // const { data: feeData } = useFeeData();
 
-  // 使用自定义hook获取assetAddress和currentContact
-  const { assetAddress, currentContact } = useAssetAddress({
-    fromChain,
-    selectedAsset,
-  });
+    const getChainData = (chains: any[], chainId: number) => {
+        return useMemo(() => {
+            return chains.find((item) => item.id.toString() === chainId.toString());
+        }, [chains, chainId]);
+    };
+    const fromChainData  = getChainData(chains, fromChain);
+    const fromContact = useMemo(() => {
+        return fromChainData?.contract;
+    }, [fromChainData]);
+    const toChainData  = getChainData(chains, toChain);
+    const toContact = useMemo(() => {
+        return toChainData?.contract;
+    }, [toChainData]);
 
-  const { assetAddress: toAssetAddress, currentContact: toCurrentContact } =
-    useAssetAddress({
-      fromChain: toChain,
-      selectedAsset,
-    });
+    const getToken = (tokens: any, selectedAsset: string) => {
+        return useMemo(() => {
+            if (!selectedAsset|| !tokens) {
+                return "";
+             }
 
-  const hasUsdc = useMemo(() => {
-    return (
-      fromChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
-      toChain !== Number(import.meta.env.VITE_APP_METIS_CHAINID) &&
-      fromChain !== Number(import.meta.env.VITE_APP_GOAT_CHAINID) &&
-      toChain !== Number(import.meta.env.VITE_APP_GOAT_CHAINID)
-    );
-  }, [fromChain, toChain]);
+            return tokens[selectedAsset];
+        }, [tokens, selectedAsset]);
+    };
+    const selectedToken = getToken(tokens, selectedAsset)
+    const fromTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+        const contracts = selectedToken?.contracts
+        return contracts[fromChain]
+    }, [selectedToken, fromChain]);
+    const fromTokenDecimal = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+
+        const decimals = selectedToken?.decimals;
+        const result = decimals?.[fromChain];
+        if(result){
+            // console.log("decimals result",result)
+            return result;
+        }
+        // console.log("decimals",6)
+        return 6;
+    }, [selectedToken, fromChain]);
+    const toTokenAddress = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+        const contracts = selectedToken?.contracts
+        return contracts[toChain]
+    }, [selectedToken, toChain]);
+    const toTokenDecimal = useMemo(() => {
+        if (!selectedToken) {
+            return "";
+        }
+
+        const decimals = selectedToken?.decimals;
+        const result = decimals?.[toChain];
+        if(result){
+            return result;
+        }
+        return 6;
+    }, [selectedToken, toChain]);
 
   const assets = useMemo(() => {
-    if (hasUsdc) {
-      return [
-        {
-          icon: MuUSDIcon,
-          label: "muUSD",
-          symbol: "muUSD",
-          id: "muUSD",
-        },
-        {
-          icon: USDCIcon,
-          label: "USDC",
-          symbol: "USDC",
-          id: "usdc",
-        },
-      ];
-    } else {
-      return [
-        {
-          icon: MuUSDIcon,
-          label: "muUSD",
-          symbol: "muUSD",
-          id: "muUSD",
-        },
-      ];
-    }
-  }, [fromChain, toChain]);
+      let allowedTokensInfo:any[] = [];
+
+      const assetsData = fromChainData?.assets;
+      if (assetsData){
+          Object.keys(assetsData).forEach(key => {
+              if (key.toString()===toChain.toString()){
+                  const allowedTokens = assetsData[key]
+
+                  allowedTokens.forEach((item :any) => {
+                      const info = tokens[item]
+                      if (info){
+                          allowedTokensInfo.push(info)
+                      }
+
+                  });
+              }
+          });
+      }
+
+      return allowedTokensInfo;
+  }, [fromChainData, toChain]);
 
   useEffect(() => {
-      // if (account.address) {
-      //     fetch(`${import.meta.env.VITE_APP_API_HOST}/getbridgeinfo`, {
-      //         method: "GET",
-      //     }).then(async (res) => {
-      //         const response = await res.json();
-      //         if (response) {
-      //             //console.log(response.chains)
-      //             setChains(response.chains)
-      //         }
-      //     });
-      // }
+      if (account.address) {
+          fetch(`${import.meta.env.VITE_APP_API_HOST}/getbridgeinfo`, {
+              method: "GET",
+          }).then(async (res) => {
+              const response = await res.json();
+              if (response) {
+                  setChains(response.chains)
+                  setTokens(response.tokens)
+                  response.chains?.forEach((item: any) => {
+                      preloadImage(item.icon)
+                  });
+
+                  Object.keys(response.tokens).forEach((key: string) => {
+                      preloadImage(response.tokens[key].icon)
+                  });
+              }
+          });
+      }
+
     if (account.address) {
       setToAddress(account.address.toString());
     }
@@ -129,7 +175,7 @@ const Bridge: React.FC = () => {
   }, [account.address]);
 
   const { data: tokenBalance } = useReadContract({
-    address: assetAddress,
+    address: fromTokenAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
     args: [account.address],
@@ -142,17 +188,17 @@ const Bridge: React.FC = () => {
   // });
 
   const { data: poolSize } = useReadContract({
-    address: toAssetAddress,
+    address: toTokenAddress,
     abi: Erc20Abi,
     functionName: "balanceOf",
-    args: [toCurrentContact],
+    args: [toContact],
     chainId: toChain,
   });
   const { data: allowance } = useReadContract({
-    address: assetAddress,
+    address: fromTokenAddress,
     abi: Erc20Abi,
     functionName: "allowance",
-    args: [account.address, currentContact],
+    args: [account.address, fromContact],
     chainId: fromChain,
   });
 
@@ -164,12 +210,12 @@ const Bridge: React.FC = () => {
       } else {
         const iface = new Interface(Erc20Abi);
         const approveData = iface.encodeFunctionData("approve", [
-          currentContact,
+            fromContact,
           MaxUint256,
         ]);
-        if (assetAddress && approveData) {
+        if (fromTokenAddress && approveData) {
           const tx = {
-            to: assetAddress as `0x${string}`,
+            to: fromTokenAddress as `0x${string}`,
             data: approveData as `0x${string}`,
             value: BigInt(0),
           };
@@ -192,12 +238,12 @@ const Bridge: React.FC = () => {
 
       const depositData = iface.encodeFunctionData("depositToken", [
         selectedAsset,
-        ethers.parseUnits(amount, 6),
+        ethers.parseUnits(amount, fromTokenDecimal),
         toChain,
         toAddress,
       ]);
       const tx = {
-        to: currentContact as `0x${string}`,
+        to: fromContact as `0x${string}`,
         data: depositData as `0x${string}`,
         value: BigInt(0),
       };
@@ -214,11 +260,11 @@ const Bridge: React.FC = () => {
         body: JSON.stringify({
           "chainId": fromChain.toString(),
           "tochainId": toChain.toString(),
-          "token": assetAddress,
+          "token": selectedAsset,
           "address": account.address,
           "hash": txHash,
           "page": "bridge",
-          "amount": ethers.parseUnits(amount, 6).toString(),
+          "amount": ethers.parseUnits(amount, fromTokenDecimal).toString(),
           "target" : toAddress,
         }),
       })
@@ -232,33 +278,6 @@ const Bridge: React.FC = () => {
     }
   };
 
-
-  // useEffect(() => {
-  //   if (!submitDisabled && isAddress(toAddress)) {
-  //     const iface = new Interface(bridgeAbi);
-  //     const depositData = iface.encodeFunctionData("depositToken", [
-  //       selectedAsset,
-  //       ethers.parseUnits(amount, 6),
-  //       toChain,
-  //       toAddress,
-  //     ]);
-  //     try {
-  //       estimateGas(config, {
-  //         account: account.address,
-  //         to: currentContact as `0x${string}`,
-  //         data: depositData as `0x${string}`,
-  //         chainId: fromChain as 1 | Number(import.meta.env.VITE_APP_ETH_CHAINID) |  Number(import.meta.env.VITE_APP_METIS_CHAINID) | 1088,
-  //       }).then(gasEstimateRes => {
-  //         setGasFee(ethers.formatEther(new BigNumber(gasEstimateRes).times(feeData?.maxFeePerGas || 0).toString()).toString());
-
-  //       });
-  //     } catch (error) {
-  //       setGasFee("--")
-  //     }
-  //   } else {
-  //     setGasFee("--")
-  //   }
-  // }, [selectedAsset, submitDisabled, amount, toChain, toAddress])
   const selectedAssetFormat = useMemo(() => {
     return selectedAsset === "muUSD"
       ? selectedAsset
@@ -293,12 +312,18 @@ const Bridge: React.FC = () => {
   }, [amount, selectedAssetFormat]);
 
   const { overPoolSize } = useMemo(() => {
-    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, 6);
+    if (!tokenBalance) {
+      return {
+        overPoolSize: false,
+      };
+    }
+
+    const _poolSize = ethers.formatUnits(poolSize?.toString() || 0, toTokenDecimal);
     return {
       overPoolSize:
         new BigNumber(amount).gt(_poolSize) && selectedAsset !== "muUSD",
     };
-  }, [tokenBalance, poolSize, amount]);
+  }, [toTokenDecimal, tokenBalance, poolSize, amount]);
 
   const submitDisabled = useMemo(() => {
     return !(
@@ -324,16 +349,20 @@ const Bridge: React.FC = () => {
                 if (value.toString() === toChain.toString()) {
                   setToChain(0);
                 }
+                setSelectedAsset("")
               }}
               value={fromChain}
-              options={CHAINS}
+              options={chains}
               placeholder="Select a chain"
               label="From"
             ></Select>
             <Select
-              onChange={(value) => setToChain(Number(value))}
+              onChange={(value) => {
+                  setToChain(Number(value))
+                  setSelectedAsset("")
+              }}
               value={toChain}
-              options={CHAINS.filter((el) => el.id !== fromChain)}
+              options={chains.filter((el) => el.id !== fromChain.toString())}
               placeholder="Select a chain"
               label="To"
             ></Select>
@@ -352,7 +381,7 @@ const Bridge: React.FC = () => {
                 Balance:{" "}
                 {tokenBalance
                   ? new BigNumber(
-                    ethers.formatUnits(tokenBalance.toString() || 0, 6) || 0
+                    ethers.formatUnits(tokenBalance.toString() || 0, fromTokenDecimal) || 0
                   ).toString()
                   : "--"}
               </div>
@@ -362,7 +391,7 @@ const Bridge: React.FC = () => {
               placeholder={"Please input amount"}
               value={amount}
               onBlur={(e) => {
-                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
+                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), fromTokenDecimal)
                 if (new BigNumber(e).lt(" 0.000001")) {
                   setAmountError("Minimum amount is 0.000001");
                   return;
@@ -387,7 +416,7 @@ const Bridge: React.FC = () => {
                 setAmountError("");
               }}
               onChange={(e) => {
-                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
+                const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), fromTokenDecimal)
                 e = e.replace(/^\D*(\d*(?:\.\d{0,10})?).*$/g, "$1");
                 setAmount(e);
                 if (new BigNumber(e).lt(" 0.000001")) {
@@ -407,13 +436,6 @@ const Bridge: React.FC = () => {
                 } else {
                   setAmountError("");
                 }
-                // const _tokenBalance = ethers.formatUnits((tokenBalance?.toString() || 0), 6)
-                // const _poolSize = ethers.formatUnits((poolSize?.toString() || 0), 6)
-                // if (new BigNumber(e).lte(_tokenBalance) && (new BigNumber(e).lte(_poolSize) || selectedAsset === "musd")) {
-                //   setAmount(e)
-                // } else {
-                //   setAmount(BigNumber.minimum(_tokenBalance, _poolSize).toString())
-                // }
               }}
             ></Input>
             {amountError && (
@@ -506,10 +528,10 @@ const Bridge: React.FC = () => {
           >
             <span>Max available amount</span>
             <span>
-              {selectedAsset !== "usdc"
+              {selectedAsset === "muUSD"
                 ? "Infinity"
                 : poolSize
-                  ? ethers.formatUnits(poolSize.toString() || 0, 6).toString()
+                  ? ethers.formatUnits(poolSize.toString() || 0, toTokenDecimal).toString()
                   : "--"}
             </span>
           </div>
@@ -577,4 +599,4 @@ const Bridge: React.FC = () => {
   );
 };
 
-export default Bridge;
+export { Bridge };
